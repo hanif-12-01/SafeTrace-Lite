@@ -1,227 +1,227 @@
-# Proposed SafeTrace Lite Architecture
+# Usulan Arsitektur SafeTrace Lite
 
-Status: **Proposed Architecture / Pre-Implementation**. Source: proposal section 3.1, pp. 4-7, with boundaries from pp. 3-4. Module ports below are planned logical interfaces, not implemented RTL declarations; only widths explicitly present in the proposal are requirements. [Source notes](source-notes.md) record open decisions and software conventions.
+Status: **Usulan Arsitektur / Praimplementasi**. Sumber utama: bagian 3.1 proposal, halaman 4-7, dengan batasan dari halaman 3-4. Port berikut merupakan antarmuka logis yang direncanakan, bukan deklarasi RTL yang sudah diimplementasikan. Lebar yang dinyatakan dalam proposal menjadi ketentuan; detail lain masih perlu ditetapkan. [Catatan sumber](source-notes.md) memuat keputusan terbuka dan asumsi model perangkat lunak.
 
-## A. System Overview
+## A. Gambaran Sistem
 
-The lifecycle is **Firmware Image → Boot Integrity Gate → Runtime Action Guard → Actuator → TrustLog → Audit Storage → Backend Verification**. This describes trust dependencies: TrustLog consumes the FPGA's decision event, not a physical feedback report from the actuator. A logged ALLOW demonstrates a gate decision; it does not prove a motor completed its movement.
+Siklus kepercayaan adalah **Image Firmware → Boot Integrity Gate → Runtime Action Guard → Aktuator → TrustLog → Penyimpanan Audit → Verifikasi Backend**. Urutan ini menunjukkan ketergantungan kepercayaan. TrustLog menerima keputusan FPGA, bukan laporan umpan balik fisik aktuator. Catatan ALLOW membuktikan keputusan gerbang; catatan tersebut tidak membuktikan motor telah menyelesaikan gerakan.
 
-1. HPS streams the test application image and version to the FPGA. Output remains BLOCK.
-2. Boot Integrity Gate uses the shared SHA-256 engine to compare the image digest against trusted configuration and checks `version >= min_version`.
-3. Success establishes `SYSTEM_TRUSTED`; failure keeps it low. Boot results form the genesis trust state for the audit chain; its exact encoding needs specification.
-4. HPS transports a sender-generated command frame containing `command_id`, `value`, `sequence`, and HMAC tag. The FPGA authenticates its payload, checks freshness, and evaluates the safety policy against the sensor snapshot.
-5. Output Gate allows a command only when all four conditions hold. Denied commands never activate the output.
-6. Event Formatter produces a fixed-width decision/reason record; TrustLog increments the event counter and extends the hash chain for ALLOW and BLOCK alike.
-7. Recent records are buffered in FPGA BRAM and synchronized to HPS/external storage. HPS periodically forwards `{device_id, event_counter, chain_head}` to the backend.
-8. Verification recomputes the chain and compares counter/head at a trusted checkpoint. Storage that predates a retained checkpoint indicates truncation or rollback.
+1. HPS mengirim image aplikasi uji dan versi ke FPGA. Keluaran tetap BLOCK.
+2. Boot Integrity Gate memakai inti SHA-256 bersama untuk membandingkan digest image dengan konfigurasi tepercaya dan memeriksa `version >= min_version`.
+3. Keberhasilan menetapkan `SYSTEM_TRUSTED`; kegagalan mempertahankan nilai rendah. Hasil boot menjadi dasar genesis rantai audit; pengodean persisnya belum ditetapkan.
+4. HPS membawa frame perintah dari pengirim tepercaya: `command_id`, `value`, `sequence`, dan tag HMAC. FPGA mengautentikasi payload, memeriksa kebaruan nomor urut, lalu mengevaluasi keselamatan dengan snapshot sensor.
+5. Output Gate hanya mengizinkan perintah jika seluruh kondisi terpenuhi. Perintah yang ditolak tidak mengaktifkan keluaran.
+6. Event Formatter membentuk catatan keputusan/alasan dengan lebar tetap. TrustLog menaikkan penghitung dan memperpanjang rantai hash untuk ALLOW maupun BLOCK.
+7. Catatan terbaru disimpan pada BRAM FPGA dan disinkronkan ke HPS/penyimpanan eksternal. Secara berkala HPS mengirim `{device_id, event_counter, chain_head}` ke backend.
+8. Verifikasi menghitung ulang rantai dan membandingkan penghitung/hash pada checkpoint tepercaya. Riwayat yang berakhir sebelum checkpoint tersimpan menunjukkan pemotongan atau rollback.
 
-![Proposed architecture](block-diagram.png)
+![Usulan arsitektur SafeTrace Lite](block-diagram.png)
 
-## B. Hardware Architecture
+## B. Arsitektur Perangkat Keras
 
-| Component | Planned role and boundary |
+| Komponen | Peran dan batas yang direncanakan |
 | --- | --- |
-| DE10-Nano HPS ARM | UI, image streaming, command transport, log synchronization and checkpoint forwarding. It does not make the final safety/authentication decision. |
-| FPGA fabric | Boot, HMAC, replay, policy, output gate, event formatting, TrustLog, trusted configuration and runtime state. |
-| HPS-to-FPGA bridge | Lightweight HPS-to-FPGA bridge carrying Avalon-MM transactions; Platform Designer integrates the host register/streaming interface. Register map and transfer protocol are pending. |
-| Shared SHA-256 core | One 512-bit-block/256-bit-digest engine, time-multiplexed between boot, HMAC, and log updates. |
-| SHA scheduler | Grants ownership and routes results; must preserve multi-block transaction context. Arbitration and worst-case wait bounds need design work. |
-| Trusted configuration | FPGA ROM/registers for 256-bit firmware digest, 256-bit prototype HMAC key, minimum version and policy. Provision before lock; deny host changes after lock. Key readout is forbidden. |
-| Command interface | Trusted sender constructs HMAC; HPS transports payload/tag. A command's ID, value and sequence must all be authenticated in the same canonical encoding. |
-| Sensor interface | Switch/ADC/GPIO trusted sensor proxy for the demo; safety checks use a coherent snapshot. Authenticity before this boundary is assumed. |
-| Output interface | GPIO/PWM to LED or low-voltage motor driver. Power loads are not driven directly by FPGA pins. Default output is inactive. |
-| Audit storage | 16-64 recent events in M10K/BRAM; HPS/external storage holds long-term events and hashes. Storage is verifiable, not inherently trusted. |
-| Backend checkpoint | Retains an independently trusted device/counter/head anchor. Full backend security and production checkpoint authentication are outside MVP. |
+| HPS ARM DE10-Nano | Antarmuka pengguna, streaming image, transport perintah, sinkronisasi log, dan penerusan checkpoint. Keputusan akhir autentikasi/keselamatan tetap pada FPGA. |
+| Fabric FPGA | Boot, HMAC, replay, kebijakan, gerbang keluaran, format peristiwa, TrustLog, konfigurasi tepercaya, dan state runtime. |
+| Bridge HPS-to-FPGA | Lightweight HPS-to-FPGA bridge membawa transaksi Avalon-MM; Platform Designer mengintegrasikan register dan streaming host. Peta register/protokol transfer belum final. |
+| Inti SHA-256 bersama | Satu mesin dengan blok masukan 512 bit dan digest 256 bit, digunakan bergantian untuk boot, HMAC, dan log. |
+| Penjadwal SHA | Memberikan kepemilikan layanan dan meneruskan hasil. Konteks transaksi multiblok harus terjaga; arbitrasi dan batas waktu tunggu masih perlu dirancang. |
+| Konfigurasi tepercaya | ROM/register FPGA berisi digest firmware 256 bit, kunci HMAC prototipe 256 bit, versi minimum, dan kebijakan. Provisioning dilakukan sebelum lock; perubahan host ditolak setelah lock. Kunci tidak boleh dibaca host. |
+| Antarmuka perintah | Pengirim tepercaya membentuk HMAC; HPS membawa payload/tag. ID, nilai, dan nomor urut harus diautentikasi bersama dalam satu pengodean baku. |
+| Antarmuka sensor | Proksi tepercaya berupa sakelar/ADC/GPIO untuk demo. Pemeriksaan keselamatan memakai snapshot yang konsisten; autentisitas sebelum batas ini diasumsikan. |
+| Antarmuka keluaran | GPIO/PWM menuju LED atau driver motor bertegangan rendah. Pin FPGA tidak langsung menggerakkan beban daya besar. Keluaran awal tidak aktif. |
+| Penyimpanan audit | 16-64 peristiwa terbaru pada M10K/BRAM; HPS/penyimpanan eksternal menyimpan peristiwa/hash jangka panjang. Penyimpanan dapat diverifikasi, tetapi tidak otomatis tepercaya. |
+| Checkpoint backend | Menyimpan anchor independen berupa ID/penghitung/hash. Keamanan penuh backend dan autentikasi checkpoint produksi berada di luar MVP. |
 
-Crypto requests shown as dashed links in the diagram are logical request/result relationships. A physical register/bus definition and a streaming backpressure contract still need to be designed.
+Garis putus-putus pada diagram menunjukkan hubungan logis permintaan/hasil kriptografi. Definisi bus/register fisik serta kontrak streaming dan backpressure masih perlu dirancang.
 
-## C. RTL Module Specification
+## C. Spesifikasi Modul RTL
 
 ### `sha256_core`
 
-| Field | Planned specification |
+| Aspek | Spesifikasi yang direncanakan |
 | --- | --- |
-| Purpose | Shared baseline SHA-256 engine, not three replicated engines. |
-| Input | `block_in[511:0]`, `init`, `next`, clock/reset and planned request handshake. |
-| Output | `digest[255:0]`, `ready`, `digest_valid`. |
-| Internal state | Working hash words, message schedule, round counter, chaining state and processing FSM. |
-| Dependencies | Standard SHA-256 compression/padding contract; scheduler supplies correctly framed blocks. |
-| Expected behavior | Accept a block only when ready; produce the corresponding digest with valid asserted; support initial and subsequent blocks without mixing clients. Padding ownership must be settled. |
-| Planned verification | Standard known-answer vectors, empty/short/multi-block inputs, 55/56/63/64-byte padding boundaries, init/next/reset and result timing. |
+| Tujuan | Mesin SHA-256 dasar yang digunakan bersama, tanpa mereplikasi tiga inti. |
+| Masukan | `block_in[511:0]`, `init`, `next`, clock/reset, dan handshake permintaan yang akan ditetapkan. |
+| Keluaran | `digest[255:0]`, `ready`, `digest_valid`. |
+| Keadaan internal | Word hash kerja, jadwal pesan, penghitung putaran, state chaining, dan FSM pemrosesan. |
+| Ketergantungan | Kontrak kompresi/padding SHA-256 standar; penjadwal memasok blok dengan pembingkaian yang benar. |
+| Perilaku yang diharapkan | Menerima blok saat ready; menghasilkan digest terkait dengan valid aktif; mendukung blok awal/lanjutan tanpa mencampur klien. Pemilik proses padding harus ditetapkan. |
+| Rencana verifikasi | Vektor dengan hasil acuan yang diketahui; pesan kosong/pendek/multiblok; batas padding 55/56/63/64 byte; init/next/reset dan waktu hasil. |
 
 ### `sha_scheduler`
 
-| Field | Planned specification |
+| Aspek | Spesifikasi yang direncanakan |
 | --- | --- |
-| Purpose | Arbitrate boot, HMAC and TrustLog requests to one SHA core. |
-| Input | `request_boot`, `request_hmac`, `request_log`, client blocks/control and core ready/valid. |
-| Output | Client grants, selected SHA request, routed digest/valid and busy/status. |
-| Internal state | Owner and arbitration FSM; transaction context or ownership retention. |
-| Dependencies | `sha256_core`, all three request controllers. |
-| Expected behavior | Exactly one owner; return digests only to that owner. Keep multi-block state coherent; reset clears grants. Priority/fairness is not prescribed by the proposal. |
-| Planned verification | Concurrent requests, long image vs runtime/log requests, backpressure, owner isolation, starvation bounds, reset while busy. |
+| Tujuan | Mengatur permintaan boot, HMAC, dan TrustLog menuju satu inti SHA. |
+| Masukan | `request_boot`, `request_hmac`, `request_log`, blok/kendali klien, serta ready/valid inti. |
+| Keluaran | Grant klien, permintaan SHA terpilih, digest/valid yang diteruskan, serta status busy. |
+| Keadaan internal | Pemilik dan FSM arbitrasi; konteks transaksi atau retensi kepemilikan. |
+| Ketergantungan | `sha256_core` dan ketiga pengendali permintaan. |
+| Perilaku yang diharapkan | Tepat satu pemilik; digest hanya kembali ke pemiliknya. State multiblok konsisten; reset membersihkan grant. Proposal belum menetapkan prioritas/keadilan. |
+| Rencana verifikasi | Permintaan bersamaan, image panjang bersaing dengan runtime/log, backpressure, isolasi pemilik, batas penundaan, dan reset saat busy. |
 
 ### `boot_integrity_ctrl`
 
-| Field | Planned specification |
+| Aspek | Spesifikasi yang direncanakan |
 | --- | --- |
-| Purpose | Verify the streamed image digest and minimum security version before runtime enable. |
-| Input | `image_stream`, `image_last`, `version`, `trusted_digest`, `min_version`, reset and SHA handshake. |
-| Output | `system_trusted`, digest/rollback status and boot result for genesis construction. |
-| Internal state | Stream/padding FSM, byte count, digest comparison, version result and trust latch. |
-| Dependencies | `sha_scheduler`, trusted configuration, host stream interface. |
-| Expected behavior | Start untrusted; assert trust only after complete image/digest/version success. No stale trusted state after failed verification or reset. |
-| Planned verification | T1-T3, incomplete image, padding boundaries, backpressure, reset during hash and comparison. |
+| Tujuan | Memverifikasi digest image dan versi minimum sebelum operasi diizinkan. |
+| Masukan | `image_stream`, `image_last`, `version`, `trusted_digest`, `min_version`, reset, dan handshake SHA. |
+| Keluaran | `system_trusted`, status digest/rollback, dan hasil boot untuk genesis. |
+| Keadaan internal | FSM streaming/padding, penghitung byte, perbandingan digest, hasil versi, dan latch kepercayaan. |
+| Ketergantungan | `sha_scheduler`, konfigurasi tepercaya, dan antarmuka streaming host. |
+| Perilaku yang diharapkan | Mulai tidak tepercaya; trust aktif setelah image lengkap, digest, dan versi valid. Kepercayaan lama tidak boleh tersisa setelah verifikasi gagal atau reset. |
+| Rencana verifikasi | T1-T3, image tidak lengkap, batas padding, backpressure, dan reset saat hashing/perbandingan. |
 
 ### `hmac_ctrl`
 
-| Field | Planned specification |
+| Aspek | Spesifikasi yang direncanakan |
 | --- | --- |
-| Purpose | Verify the sender's HMAC-SHA256 over the complete command payload. |
-| Input | `cmd_payload`, `auth_tag`, protected `key_ref`, request/reset and SHA results. |
-| Output | `auth_valid`, completion and authentication failure status. |
-| Internal state | Inner/outer hash FSM, ipad/opad preparation, intermediate digest and captured tag. |
-| Dependencies | `sha_scheduler`, protected key, canonical command serialization. |
-| Expected behavior | Follow the HMAC construction; compare all 256 tag bits before declaring valid. Clear previous validity for each transaction. |
-| Planned verification | Independent known-answer vectors, payload/tag/key modifications, all-field binding, short/multi-block messages and reset. |
+| Tujuan | Memverifikasi HMAC-SHA256 pengirim atas seluruh payload perintah. |
+| Masukan | `cmd_payload`, `auth_tag`, `key_ref` terlindungi, permintaan/reset, dan hasil SHA. |
+| Keluaran | `auth_valid`, status selesai, dan kegagalan autentikasi. |
+| Keadaan internal | FSM hash bagian dalam/luar, persiapan ipad/opad, digest antara, dan tag yang ditangkap. |
+| Ketergantungan | `sha_scheduler`, kunci terlindungi, dan serialisasi perintah baku. |
+| Perilaku yang diharapkan | Mengikuti konstruksi HMAC; seluruh 256 bit tag dibandingkan sebelum valid. Validitas lama dibersihkan pada setiap transaksi. |
+| Rencana verifikasi | Vektor acuan independen, perubahan payload/tag/kunci, autentikasi semua field, pesan pendek/multiblok, dan reset. |
 
 ### `replay_guard`
 
-| Field | Planned specification |
+| Aspek | Spesifikasi yang direncanakan |
 | --- | --- |
-| Purpose | Require a monotonically increasing authenticated sequence. |
-| Input | `seq_in`, authentication completion/valid, transaction/reset control. |
-| Output | `seq_valid`, replay reason/status and last-sequence readout if exposed. |
-| Internal state | `last_seq`; width, initial value and reset/session lifecycle pending. |
-| Dependencies | `hmac_ctrl`, command capture; update policy feeds output/event control. |
-| Expected behavior | Accept only `seq_in > last_seq`. Unauthenticated input must not advance it; no backward update or silent wrap acceptance. Whether a fresh authenticated policy-denied command consumes sequence must be finalized. |
-| Planned verification | T6, equal/older/future values, invalid-tag poisoning, overflow and reset/session behavior. |
+| Tujuan | Memastikan nomor urut autentik meningkat secara monoton. |
+| Masukan | `seq_in`, status autentikasi selesai/valid, serta kendali transaksi/reset. |
+| Keluaran | `seq_valid`, alasan/status replay, dan pembacaan nomor terakhir jika diekspos. |
+| Keadaan internal | `last_seq`; lebar, nilai awal, serta siklus reset/sesi belum final. |
+| Ketergantungan | `hmac_ctrl`, penangkapan perintah, serta kendali pembaruan state/keluaran/peristiwa. |
+| Perilaku yang diharapkan | Terima hanya `seq_in > last_seq`. Masukan tidak autentik tidak boleh memajukan state; state tidak mundur atau menerima wrap secara diam-diam. Pemakaian nomor baru untuk perintah yang ditolak kebijakan masih perlu ditetapkan. |
+| Rencana verifikasi | T6, nomor sama/lama/baru, peracunan state dengan tag palsu, batas maksimum, dan reset/sesi. |
 
 ### `policy_engine`
 
-| Field | Planned specification |
+| Aspek | Spesifikasi yang direncanakan |
 | --- | --- |
-| Purpose | Deterministic hardware safety checks using comparator/FSM/register logic. |
-| Input | `cmd_id`, `cmd_value`, trusted `sensor_state`, threshold registers and check-valid controls. |
-| Output | `policy_valid`, `reason_code`. |
-| Internal state | Captured command/sensor snapshot and policy-evaluation FSM as needed. |
-| Dependencies | Locked policy configuration, authenticated/fresh command, sensor interface. |
-| Expected behavior | Check allowed command and value/sensor bounds; e.g. speed <=80% and temperature <=configured threshold. Unknown commands should fail closed; exact whitelist is pending. |
-| Planned verification | T7-T9, every supported command, equality/one-over boundaries, changing sensor snapshot and error paths. |
+| Tujuan | Pemeriksaan keselamatan deterministik memakai komparator/FSM/register. |
+| Masukan | `cmd_id`, `cmd_value`, `sensor_state` tepercaya, register ambang, dan kendali valid. |
+| Keluaran | `policy_valid`, `reason_code`. |
+| Keadaan internal | Snapshot perintah/sensor dan FSM evaluasi jika diperlukan. |
+| Ketergantungan | Konfigurasi kebijakan terkunci, perintah autentik dengan nomor baru, dan antarmuka sensor. |
+| Perilaku yang diharapkan | Memeriksa daftar perintah yang diizinkan dan batas nilai/sensor, misalnya kecepatan <=80% dan suhu <=ambang. Perintah tidak dikenal ditolak; daftar final belum ditetapkan. |
+| Rencana verifikasi | T7-T9, seluruh ID yang didukung, nilai sama dengan/melebihi batas satu satuan, konsistensi snapshot, dan jalur kesalahan. |
 
 ### `output_gate`
 
-| Field | Planned specification |
+| Aspek | Spesifikasi yang direncanakan |
 | --- | --- |
-| Purpose | Make the final ALLOW/BLOCK decision and gate actuation. |
-| Input | `system_trusted`, `auth_valid`, `seq_valid`, `policy_valid`, captured output request and reset/error. |
-| Output | ALLOW/BLOCK, gated `ACTUATOR_ENABLE`/GPIO/PWM request and event decision. |
-| Internal state | Transaction-valid/decision latch; pulse or held-output semantics pending. |
-| Dependencies | Boot, HMAC, replay and policy results from the same transaction. |
-| Expected behavior | ALLOW only when all conditions are true. Reset/untrusted/error gives BLOCK without a stale enable. |
-| Planned verification | Full condition truth table, T4-T9, T12, cross-transaction validity isolation and output timing. |
+| Tujuan | Menetapkan keputusan akhir ALLOW/BLOCK dan membatasi aktuasi. |
+| Masukan | `system_trusted`, `auth_valid`, `seq_valid`, `policy_valid`, permintaan keluaran yang ditangkap, dan reset/error. |
+| Keluaran | ALLOW/BLOCK, `ACTUATOR_ENABLE`/GPIO/PWM terkendali, dan keputusan peristiwa. |
+| Keadaan internal | Validitas transaksi/latch keputusan; keluaran pulsa atau ditahan belum ditetapkan. |
+| Ketergantungan | Hasil boot, HMAC, replay, dan kebijakan yang terkait transaksi yang sama. |
+| Perilaku yang diharapkan | ALLOW hanya jika seluruh kondisi benar. Reset/tidak tepercaya/error menghasilkan BLOCK tanpa enable lama. |
+| Rencana verifikasi | Tabel seluruh kombinasi kondisi, T4-T9, T12, pemisahan validitas antartransaksi, dan timing keluaran. |
 
 ### `event_formatter`
 
-| Field | Planned specification |
+| Aspek | Spesifikasi yang direncanakan |
 | --- | --- |
-| Purpose | Serialize fixed-width decision evidence for ALLOW and BLOCK. |
-| Input | `counter`, `timestamp`, command, sensor snapshot, decision/reason and compact firmware version. |
-| Output | Event record <=128 bits, record-valid and planned acceptance handshake. |
-| Internal state | Captured event fields and buffer-valid state. |
-| Dependencies | `output_gate`, runtime state, TrustLog buffering and canonical event format. |
-| Expected behavior | Record the same snapshot used in the decision. Preserve denied decisions too; do not overwrite a pending event silently. |
-| Planned verification | Bit packing/endianness, field limits, ALLOW/BLOCK reasons, counter rollover and downstream backpressure. |
+| Tujuan | Membentuk bukti keputusan ALLOW/BLOCK dengan lebar tetap. |
+| Masukan | `counter`, `timestamp`, perintah, snapshot sensor, keputusan/alasan, dan versi firmware ringkas. |
+| Keluaran | Catatan peristiwa <=128 bit, record-valid, dan handshake penerimaan yang direncanakan. |
+| Keadaan internal | Field peristiwa yang ditangkap dan validitas buffer. |
+| Ketergantungan | `output_gate`, state runtime, buffer TrustLog, dan format peristiwa baku. |
+| Perilaku yang diharapkan | Mencatat snapshot yang sama dengan dasar keputusan, termasuk penolakan. Peristiwa tertunda tidak boleh tertimpa tanpa pemberitahuan. |
+| Rencana verifikasi | Pengemasan bit/endianness, batas field, alasan ALLOW/BLOCK, batas penghitung, dan backpressure penerima. |
 
 ### `trustlog_ctrl`
 
-| Field | Planned specification |
+| Aspek | Spesifikasi yang direncanakan |
 | --- | --- |
-| Purpose | Extend the decision hash chain, manage recent events and support verification/checkpoint readout. |
-| Input | `prev_hash`, `event_record`, boot genesis material, SHA results, verify-mode record/hash input. |
-| Output | `current_hash`, event counter, buffered event/hash, `tamper_flag`, checkpoint snapshot. |
-| Internal state | Previous/current 256-bit hash, counter, ring-buffer pointers, hashing/verification FSM. |
-| Dependencies | `event_formatter`, `sha_scheduler`, M10K/BRAM and host register interface. |
-| Expected behavior | Atomically commit one event/counter/head update after hash completion. Recomputed mismatch sets tamper status. Host sees a consistent counter/head pair. |
-| Planned verification | T10-T11, deterministic chain, reordered/missing records, forged heads, buffer wrap, simultaneous export/hash and reset interruption. |
+| Tujuan | Memperpanjang rantai hash, mengelola peristiwa terbaru, dan menyediakan verifikasi/checkpoint. |
+| Masukan | `prev_hash`, `event_record`, bahan genesis boot, hasil SHA, serta masukan catatan/hash mode verify. |
+| Keluaran | `current_hash`, penghitung peristiwa, peristiwa/hash terbuffer, `tamper_flag`, dan snapshot checkpoint. |
+| Keadaan internal | Hash sebelumnya/terkini 256 bit, penghitung, penunjuk ring buffer, serta FSM hashing/verifikasi. |
+| Ketergantungan | `event_formatter`, `sha_scheduler`, M10K/BRAM, dan register host. |
+| Perilaku yang diharapkan | Satu pembaruan peristiwa/penghitung/hash dilakukan atomik setelah hash selesai. Ketidaksesuaian hasil verifikasi menetapkan status perubahan. Host membaca pasangan penghitung/hash yang konsisten. |
+| Rencana verifikasi | T10-T11, rantai deterministik, urutan berubah/catatan hilang, hash palsu, perputaran buffer, ekspor bersamaan dengan hash, dan reset di tengah pembaruan. |
 
 ### `avalon_mm_regs`
 
-| Field | Planned specification |
+| Aspek | Spesifikasi yang direncanakan |
 | --- | --- |
-| Purpose | HPS-facing control/status, policy configuration and audit/checkpoint access. |
-| Input | Avalon-MM read/write/address/data/byte-enable and internal status. |
-| Output | Read data, wait/response as needed, accepted stream/config controls and checkpoint readout. |
-| Internal state | Configuration lock, transport staging registers, status and snapshot control. |
-| Dependencies | Lightweight HPS bridge, all controllers and trusted configuration. |
-| Expected behavior | Reject host writes to locked digest/key/minimum version/policy; keep key unreadable. Proposal describes trusted key/digest as read-protected after lock. Separate public verification status from protected contents. |
-| Planned verification | Lock enforcement, denied reads/writes, invalid addresses, byte enables, partial transactions, coherent checkpoint reads and reset lock lifecycle. |
+| Tujuan | Kendali/status HPS, konfigurasi kebijakan, dan akses audit/checkpoint. |
+| Masukan | Read/write/address/data/byte-enable Avalon-MM dan status internal. |
+| Keluaran | Data baca, wait/response sesuai kebutuhan, kendali streaming/konfigurasi yang diterima, serta pembacaan checkpoint. |
+| Keadaan internal | Lock konfigurasi, register penampung transport, status, dan kendali snapshot. |
+| Ketergantungan | Lightweight HPS bridge, semua pengendali, dan konfigurasi tepercaya. |
+| Perilaku yang diharapkan | Menolak penulisan host ke digest/kunci/versi minimum/kebijakan setelah lock. Kunci tidak terbaca; proposal juga menyatakan kunci/digest dilindungi dari pembacaan setelah lock. Pisahkan status verifikasi publik dari isi terlindungi. |
+| Rencana verifikasi | Penegakan lock, penolakan baca/tulis, alamat salah, byte-enable, transaksi parsial, snapshot konsisten, dan siklus lock/reset. |
 
-## D. Cryptographic Workflow
+## D. Alur Kriptografi
 
-Let `||` mean concatenation of canonical bytes and `C_0` the genesis state tied to the boot result. For decision event `Event_i`:
+Simbol `||` berarti penggabungan byte baku; `C_0` adalah genesis yang terkait hasil boot. Untuk peristiwa keputusan `Event_i`:
 
 $$
 C_i = \operatorname{SHA256}(C_{i-1} \parallel \operatorname{Event}_i)
 $$
 
-`C_{i-1}` is the previous 256-bit chain head, `Event_i` is the fixed-width event including its counter, and `C_i` is the new 256-bit head. The event counter increases once per committed event. Exact genesis bytes, device/session binding and persistence are not specified by the proposal.
+`C_{i-1}` adalah hash terakhir sebelumnya sebesar 256 bit; `Event_i` adalah peristiwa berlebar tetap yang mencakup penghitung; `C_i` adalah hash baru 256 bit. Penghitung meningkat satu kali untuk setiap peristiwa yang selesai dicatat. Proposal belum menentukan byte genesis, pengikatan perangkat/sesi, dan persistensinya.
 
-For command payload `m` and provisioned key `K`:
+Untuk payload perintah `m` dan kunci `K`:
 
 $$
 \operatorname{HMAC}_{K}(m) = \operatorname{SHA256}((K' \oplus opad) \parallel \operatorname{SHA256}((K' \oplus ipad) \parallel m))
 $$
 
-`K'` is the key padded to SHA-256's 64-byte block (hash first if longer than a block); ipad/opad are the standard byte masks. MVP provisioning uses a 256-bit key. Payload/tag must be latched once; authentication, sequence and policy results must refer to that command.
+`K'` adalah kunci yang ditambah byte nol hingga berukuran satu blok SHA-256, yaitu 64 byte; jika kunci melebihi satu blok, hash dihitung terlebih dahulu sesuai aturan HMAC. ipad/opad adalah mask byte standar. MVP menggunakan kunci 256 bit. Payload/tag ditangkap sekali agar autentikasi, nomor urut, dan kebijakan merujuk perintah yang sama.
 
 $$
 \mathrm{ALLOW}=\mathrm{SYSTEM\_TRUSTED}\land\mathrm{HMAC\_VALID}\land\mathrm{FRESH\_SEQUENCE}\land\mathrm{POLICY\_VALID}
 $$
 
-`SYSTEM_TRUSTED` is the completed boot digest/version result; `HMAC_VALID` is the complete tag comparison; `FRESH_SEQUENCE` is the increasing-sequence check; `POLICY_VALID` is the value/sensor safety decision. HMAC failure stops freshness-state updates. Safety evaluation follows freshness. The final decision and reason go to both Output Gate and TrustLog.
+`SYSTEM_TRUSTED` menunjukkan pemeriksaan digest/versi boot telah berhasil; `HMAC_VALID` menunjukkan seluruh tag sesuai; `FRESH_SEQUENCE` menunjukkan nomor urut meningkat; `POLICY_VALID` menunjukkan nilai/sensor aman. HMAC gagal mencegah pembaruan nomor urut. Kebijakan dievaluasi setelah kebaruan nomor. Keputusan/alasan diteruskan ke gerbang keluaran dan TrustLog.
 
-### Fixed event and SHA padding
+### Format Peristiwa dan Padding SHA
 
-Proposal p. 5 supplies this example, with all widths summing to **128 bits**:
+Contoh pada halaman 5 proposal berjumlah **128 bit**:
 
-| Field | Bits |
+| Field | Bit |
 | --- | --- |
-| Event counter | 32 |
-| Timestamp low | 32 |
-| Command ID | 8 |
-| Command value | 16 |
-| Sensor state | 16 |
-| Decision + reason | 8 |
-| Compact firmware/security version | 16 |
+| Penghitung peristiwa | 32 |
+| Timestamp bagian rendah | 32 |
+| ID perintah | 8 |
+| Nilai perintah | 16 |
+| Status sensor | 16 |
+| Keputusan dan alasan | 8 |
+| Versi firmware/keamanan ringkas | 16 |
 
-A 256-bit previous hash plus 128-bit event is **384 message bits**. SHA padding adds a `1` bit, 63 zero bits and a 64-bit message length: one 512-bit block. This clarifies the proposal's imprecise sentence about a "384-bit payload"; it does not change the event design. Longer events may require additional blocks. One-block hashing is an engineering target, not a measured latency guarantee.
+Hash sebelumnya 256 bit + peristiwa 128 bit = **384 bit pesan**. Padding SHA menambahkan satu bit `1`, 63 bit nol, dan panjang pesan 64 bit: total satu blok 512 bit. Perhitungan ini memperjelas kalimat proposal mengenai "payload 384 bit" tanpa mengubah desain peristiwa. Peristiwa lebih panjang dapat membutuhkan blok tambahan. Pemrosesan satu blok merupakan target rekayasa, bukan jaminan latensi terukur.
 
-## E. Memory Architecture
+## E. Arsitektur Memori
 
-| Item | Planned location / size | Lifecycle and access |
+| Komponen | Lokasi dan ukuran yang direncanakan | Siklus hidup dan akses |
 | --- | --- | --- |
-| Trusted firmware digest | FPGA register/ROM, 256 bits | Provisioned reference, protected after lock; used by boot controller. |
-| HMAC key | FPGA register/ROM, 256 bits in MVP | Provisioned demo secret; never exposed through host readout; no host writes after lock. |
-| Minimum security version | FPGA register/ROM, width pending | Reject versions below threshold; production persistence and version/image binding need design. |
-| Policy registers | FPGA registers, widths pending | Whitelist/thresholds; configuration lock prevents host alteration. |
-| Replay state | FPGA `last_sequence` register | Monotonic within defined session; reset-safe replay persistence is not established. |
-| Event counter | FPGA register; example event uses 32 bits | Monotonic within epoch; rollover must fail closed or transition to an explicitly defined new epoch. |
-| Previous/current hash | FPGA registers, 256 bits each | Update only on completed chain operation; reset/genesis contract pending. |
-| Event buffer | M10K/BRAM, planned 16-64 recent events | Ring buffer plus control/hash metadata; HPS drains/synchronizes. Overflow/backpressure policy pending. |
-| Long-term log | HPS/external storage | Holds serialized records and hashes; verify against independently trusted anchors. |
-| Checkpoint | Backend device ID, counter, 256-bit head | Retention/ingestion trust assumed for MVP; atomic snapshot required. |
+| Digest firmware tepercaya | Register/ROM FPGA, 256 bit | Acuan yang diprovisikan dan dilindungi setelah lock; digunakan pengendali boot. |
+| Kunci HMAC | Register/ROM FPGA, 256 bit pada MVP | Rahasia demo yang diprovisikan; tidak dibaca host dan tidak ditulis host setelah lock. |
+| Versi keamanan minimum | Register/ROM FPGA, lebar belum final | Menolak versi rendah; persistensi produksi dan pengikatan versi/image perlu dirancang. |
+| Register kebijakan | Register FPGA, lebar belum final | Daftar izin/ambang; lock mencegah perubahan host. |
+| State replay | Register FPGA `last_sequence` | Monoton dalam sesi yang ditetapkan; persistensi aman saat reset belum dibuktikan. |
+| Penghitung peristiwa | Register FPGA; contoh peristiwa memakai 32 bit | Monoton dalam satu periode; batas maksimum harus menolak secara aman atau memulai periode baru yang ditetapkan eksplisit. |
+| Hash sebelumnya/terkini | Register FPGA, masing-masing 256 bit | Diperbarui setelah operasi rantai selesai; kontrak reset/genesis belum final. |
+| Buffer peristiwa | M10K/BRAM, 16-64 peristiwa terbaru | Ring buffer beserta kendali/metadata hash; dikuras/disinkronkan HPS. Aturan buffer penuh/backpressure belum final. |
+| Log jangka panjang | HPS/penyimpanan eksternal | Catatan dan hash diverifikasi terhadap anchor independen. |
+| Checkpoint | Backend: ID perangkat, penghitung, hash 256 bit | Kepercayaan retensi/penerimaan diasumsikan pada MVP; snapshot harus atomik. |
 
-## F. Security Boundaries
+## F. Batas Keamanan
 
-The trusted FPGA boundary includes core logic, trusted configuration and trusted sensor input after entry. HPS command transport and external log storage must not bypass gate checks. A SHA chain provides tamper evidence relative to a trusted genesis/head; it is not encryption, forward-secure logging, or an immutable storage guarantee. Recomputing the whole unkeyed chain is possible if an attacker can also substitute its trusted anchors.
+Batas tepercaya FPGA meliputi logika inti, konfigurasi, dan masukan sensor setelah melewati antarmuka tepercaya. Transport perintah HPS dan log eksternal tidak boleh melewati pemeriksaan gerbang. Rantai SHA memberikan bukti perubahan relatif terhadap genesis/hash tepercaya. MVP tidak menyediakan enkripsi, forward-secure logging, atau penyimpanan yang mustahil diubah. Rantai tanpa kunci dapat dihitung ulang seluruhnya jika anchor tepercaya juga dapat diganti.
 
-Tail truncation is detected only when it contradicts an independently retained checkpoint (or a newer trusted local head). Events created after the newest backend checkpoint can disappear without that checkpoint proving their existence. Checkpoint spoofing/rollback protection and authenticated backend transport are not implemented here.
+Pemotongan bagian akhir terdeteksi ketika bertentangan dengan checkpoint yang disimpan independen atau hash lokal tepercaya yang lebih baru. Peristiwa setelah checkpoint terakhir dapat hilang tanpa checkpoint itu membuktikan keberadaannya. Perlindungan pemalsuan/rollback checkpoint serta autentikasi transport backend belum diimplementasikan.
 
-**Outside MVP:** full backend security, network DoS protection, invasive hardware attacks, side-channel/fault-injection resistance, sensor spoofing before the trusted interface, production key provisioning, and full signed secure boot. The MVP verifies the supplied test image before enabling the actuator; it does not establish which arbitrary HPS code is actually executing or stop an untrusted host from substituting a different application after measurement. Signed firmware verification, secure provisioning and deeper boot-chain integration are future work.
+**Di luar MVP:** keamanan penuh backend, perlindungan DoS, serangan fisik invasif, side-channel/fault injection, pemalsuan sensor sebelum antarmuka, penyediaan kunci produksi, dan secure boot penuh dengan tanda tangan. MVP memverifikasi image aplikasi uji sebelum aktuator aktif. MVP belum membuktikan kode HPS mana yang benar-benar berjalan atau mencegah host mengganti aplikasi setelah pengukuran. Verifikasi tanda tangan firmware, penyediaan kunci aman, dan integrasi lebih dalam ke rantai boot merupakan pengembangan lanjutan.
 
-## Resource and integration plan
+## Target Sumber Daya dan Rencana Integrasi
 
-All budgets are **engineering target — not measured result**: <=4,000 ALM, <=5,000 FF, <=128 Kbit BRAM, 0 DSP and 50 MHz. The proposal reports competition-template capacities of 110,000 LEs / 41,910 ALMs, 5,570 Kbit BRAM and 112 DSP; these are quoted source figures, not a device utilization report. Actual capacities and fit must be confirmed for 5CSEBA6U23I7 in Quartus.
+Seluruh anggaran merupakan **target rekayasa — bukan hasil pengukuran**: <=4.000 ALM, <=5.000 FF, <=128 Kbit BRAM, 0 DSP, dan 50 MHz. Proposal mengutip kapasitas template kompetisi sebesar 110.000 LE / 41.910 ALM, BRAM 5.570 Kbit, dan 112 DSP. Angka tersebut merupakan kutipan sumber, bukan laporan penggunaan perangkat. Kapasitas dan kesesuaian aktual 5CSEBA6U23I7 perlu dikonfirmasi di Quartus.
 
-Time-multiplexing avoids SHA replication but introduces queueing. Policy uses comparators/FSM/registers. SHA clock enable is planned while requests are active. Power values require Quartus Power Analyzer and a documented activity assumption. [The verification plan](verification-plan.md) specifies the evidence required before making implementation claims.
+Penggunaan bergantian menghindari replikasi SHA, tetapi menambah antrean. Kebijakan menggunakan komparator/FSM/register. Clock-enable SHA direncanakan aktif ketika ada permintaan. Angka daya memerlukan Quartus Power Analyzer dan asumsi aktivitas yang dijelaskan. [Rencana verifikasi](verification-plan.md) menetapkan bukti sebelum klaim implementasi dibuat.

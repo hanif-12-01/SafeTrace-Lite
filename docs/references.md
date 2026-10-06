@@ -1,148 +1,148 @@
-# Scientific References and DOI-Bearing Technical Standards
+# Referensi Ilmiah dan Standar Teknis Ber-DOI
 
-References [1]-[16] come from proposal section 4 (pp. 9-10). Numbering is preserved. Each entry has a DOI and a project relevance statement; relevance describes design motivation, not measured SafeTrace Lite performance.
+Referensi [1]-[16] berasal dari bagian 4 proposal, halaman 9-10. Penomoran dipertahankan. Setiap entri memiliki DOI dan penjelasan relevansi terhadap proyek. Relevansi menjelaskan dasar perancangan; kinerja SafeTrace Lite belum diukur. Judul publikasi dan nama penerbit dipertahankan dalam bahasa aslinya agar sesuai metadata DOI.
 
-Bibliographic metadata was checked against publisher-deposited [Crossref records](https://api.crossref.org/) for [1]-[13] and official NIST publication pages for [14]-[16] on **2026-10-06**. Minor author corrections are listed below. The proposal remains the architectural source of truth.
+Metadata bibliografi diperiksa terhadap [catatan Crossref dari penerbit](https://api.crossref.org/) untuk [1]-[13] dan halaman resmi NIST untuk [14]-[16] pada **6 Oktober 2026**. Koreksi nama penulis dijelaskan di bawah. Proposal tetap menjadi acuan utama arsitektur.
 
-## Peer-reviewed scientific publications
+## Publikasi Ilmiah yang Ditelaah Sejawat
 
-### [1] Industrial cyber-physical security
+### [1] Keamanan Sistem Siber-Fisik Industri
 
-- **Authors:** Hakan Kayan, Matthew Nunes, Omer Rana, Pete Burnap, Charith Perera.
-- **Title:** Cybersecurity of Industrial Cyber-Physical Systems: A Review.
-- **Publication / year:** *ACM Computing Surveys*, 54(11s), Article 229, 2022.
+- **Penulis:** Hakan Kayan, Matthew Nunes, Omer Rana, Pete Burnap, Charith Perera.
+- **Judul:** Cybersecurity of Industrial Cyber-Physical Systems: A Review.
+- **Publikasi / tahun:** *ACM Computing Surveys*, 54(11s), Article 229, 2022.
 - **DOI:** [10.1145/3510410](https://doi.org/10.1145/3510410).
-- **Relevance:** ICPS attack surfaces and the motivation for coordinated lifecycle security checks.
+- **Relevansi:** Permukaan serangan ICPS dan dasar pemeriksaan keamanan yang terkoordinasi sepanjang siklus hidup.
 
-### [2] Cyber-physical security survey
+### [2] Survei Keamanan Sistem Siber-Fisik
 
-- **Authors:** Abdulmalik Humayed, Jingqiang Lin, Fengjun Li, Bo Luo.
-- **Title:** Cyber-Physical Systems Security-A Survey.
-- **Publication / year:** *IEEE Internet of Things Journal*, 4(6), 1802-1831, 2017.
+- **Penulis:** Abdulmalik Humayed, Jingqiang Lin, Fengjun Li, Bo Luo.
+- **Judul:** Cyber-Physical Systems Security-A Survey.
+- **Publikasi / tahun:** *IEEE Internet of Things Journal*, 4(6), 1802-1831, 2017.
 - **DOI:** [10.1109/JIOT.2017.2703172](https://doi.org/10.1109/JIOT.2017.2703172).
-- **Relevance:** Links cyber compromise to sensing, control, and physical consequences.
+- **Relevansi:** Hubungan kompromi siber dengan pengindraan, kendali, dan konsekuensi fisik.
 
-### [3] Industrial networks
+### [3] Jaringan Industri
 
-- **Authors:** Manuel Cheminod, Luca Durante, Adriano Valenzano.
-- **Title:** Review of Security Issues in Industrial Networks.
-- **Publication / year:** *IEEE Transactions on Industrial Informatics*, 9(1), 277-293, 2013.
+- **Penulis:** Manuel Cheminod, Luca Durante, Adriano Valenzano.
+- **Judul:** Review of Security Issues in Industrial Networks.
+- **Publikasi / tahun:** *IEEE Transactions on Industrial Informatics*, 9(1), 277-293, 2013.
 - **DOI:** [10.1109/TII.2012.2198666](https://doi.org/10.1109/TII.2012.2198666).
-- **Relevance:** Industrial constraints motivate a compact guard for critical physical commands.
+- **Relevansi:** Karakteristik industri menjadi dasar pengaman ringkas untuk perintah fisik kritis.
 
-### [4] Process-control attacks
+### [4] Serangan pada Kendali Proses
 
-- **Authors:** Alvaro A. Cardenas, Saurabh Amin, Zong-Syun Lin, Yu-Lun Huang, Chi-Yen Huang, Shankar Sastry.
-- **Title:** Attacks against process control systems: risk assessment, detection, and response.
-- **Publication / year:** *Proceedings of the 6th ACM Symposium on Information, Computer and Communications Security (ASIACCS)*, 355-366, 2011.
+- **Penulis:** Alvaro A. Cardenas, Saurabh Amin, Zong-Syun Lin, Yu-Lun Huang, Chi-Yen Huang, Shankar Sastry.
+- **Judul:** Attacks against process control systems: risk assessment, detection, and response.
+- **Publikasi / tahun:** *Proceedings of the 6th ACM Symposium on Information, Computer and Communications Security (ASIACCS)*, 355-366, 2011.
 - **DOI:** [10.1145/1966913.1966959](https://doi.org/10.1145/1966913.1966959).
-- **Relevance:** Supports evaluating physical context, beyond authenticating a network message.
+- **Relevansi:** Dasar evaluasi kondisi fisik sebagai pelengkap autentikasi pesan jaringan.
 
-### [5] Secure bootstrap
+### [5] Bootstrap Aman
 
-- **Authors:** W. A. Arbaugh, D. J. Farber, J. M. Smith.
-- **Title:** A Secure and Reliable Bootstrap Architecture.
-- **Publication / year:** *IEEE Symposium on Security and Privacy*, 65-71, 1997.
+- **Penulis:** W. A. Arbaugh, D. J. Farber, J. M. Smith.
+- **Judul:** A Secure and Reliable Bootstrap Architecture.
+- **Publikasi / tahun:** *IEEE Symposium on Security and Privacy*, 65-71, 1997.
 - **DOI:** [10.1109/SECPRI.1997.601317](https://doi.org/10.1109/SECPRI.1997.601317).
-- **Relevance:** Chain-of-trust motivation for verifying an image before the next operational stage.
+- **Relevansi:** Dasar rantai kepercayaan untuk memverifikasi image sebelum tahap operasi berikutnya.
 
-### [6] IoT boot and attestation
+### [6] Boot dan Atestasi IoT
 
-- **Authors:** Zhen Ling, Huaiyu Yan, Xinhui Shao, Junzhou Luo, Yiling Xu, Bryan Pearson, Xinwen Fu.
-- **Title:** Secure boot, trusted boot and remote attestation for ARM TrustZone-based IoT Nodes.
-- **Publication / year:** *Journal of Systems Architecture*, 119, 102240, 2021.
+- **Penulis:** Zhen Ling, Huaiyu Yan, Xinhui Shao, Junzhou Luo, Yiling Xu, Bryan Pearson, Xinwen Fu.
+- **Judul:** Secure boot, trusted boot and remote attestation for ARM TrustZone-based IoT Nodes.
+- **Publikasi / tahun:** *Journal of Systems Architecture*, 119, 102240, 2021.
 - **DOI:** [10.1016/j.sysarc.2021.102240](https://doi.org/10.1016/j.sysarc.2021.102240).
-- **Relevance:** Boot measurement and integrity context; SafeTrace Lite's digest gate is a narrower prototype.
+- **Relevansi:** Dasar pengukuran boot dan integritas; gerbang digest SafeTrace Lite memiliki cakupan prototipe yang lebih terbatas.
 
-### [7] Runtime safety
+### [7] Keselamatan Saat Operasi
 
-- **Authors:** Stanley Bak, Deepti K. Chivukula, Olugbemiga Adekunle, Mu Sun, Marco Caccamo, Lui Sha.
-- **Title:** The System-Level Simplex Architecture for Improved Real-Time Embedded System Safety.
-- **Publication / year:** *15th IEEE Real-Time and Embedded Technology and Applications Symposium (RTAS)*, 99-107, 2009.
+- **Penulis:** Stanley Bak, Deepti K. Chivukula, Olugbemiga Adekunle, Mu Sun, Marco Caccamo, Lui Sha.
+- **Judul:** The System-Level Simplex Architecture for Improved Real-Time Embedded System Safety.
+- **Publikasi / tahun:** *15th IEEE Real-Time and Embedded Technology and Applications Symposium (RTAS)*, 99-107, 2009.
 - **DOI:** [10.1109/RTAS.2009.20](https://doi.org/10.1109/RTAS.2009.20).
-- **Relevance:** Motivation for separating small safety decision logic from complex controller software; no full Simplex controller is claimed here.
+- **Relevansi:** Dasar pemisahan logika keselamatan kecil dari pengendali perangkat lunak kompleks. Pengendali Simplex lengkap tidak diimplementasikan di sini.
 
-### [8] Lightweight trusted hardware
+### [8] Perangkat Keras Tepercaya yang Ringan
 
-- **Authors:** Patrick Koeberl, Steffen Schulz, Ahmad-Reza Sadeghi, Vijay Varadharajan.
-- **Title:** TrustLite: A Security Architecture for Tiny Embedded Devices.
-- **Publication / year:** *Proceedings of the Ninth European Conference on Computer Systems (EuroSys)*, 2014.
+- **Penulis:** Patrick Koeberl, Steffen Schulz, Ahmad-Reza Sadeghi, Vijay Varadharajan.
+- **Judul:** TrustLite: A Security Architecture for Tiny Embedded Devices.
+- **Publikasi / tahun:** *Proceedings of the Ninth European Conference on Computer Systems (EuroSys)*, 2014.
 - **DOI:** [10.1145/2592798.2592824](https://doi.org/10.1145/2592798.2592824).
-- **Relevance:** Lightweight hardware trust-boundary motivation; SafeTrace Lite does not implement TrustLite's isolation architecture.
+- **Relevansi:** Dasar batas kepercayaan perangkat keras yang ringan. SafeTrace Lite tidak mengimplementasikan arsitektur isolasi TrustLite.
 
-### [9] Secure audit logging
+### [9] Pencatatan Audit Aman
 
-- **Authors:** Bruce Schneier, John Kelsey.
-- **Title:** Secure Audit Logs to Support Computer Forensics.
-- **Publication / year:** *ACM Transactions on Information and System Security*, 2(2), 159-176, 1999.
+- **Penulis:** Bruce Schneier, John Kelsey.
+- **Judul:** Secure Audit Logs to Support Computer Forensics.
+- **Publikasi / tahun:** *ACM Transactions on Information and System Security*, 2(2), 159-176, 1999.
 - **DOI:** [10.1145/317087.317089](https://doi.org/10.1145/317087.317089).
-- **Relevance:** Integrity evidence for forensic histories; the MVP is a simpler hash chain and does not claim equivalent forward-security properties.
+- **Relevansi:** Dasar bukti integritas untuk riwayat forensik. MVP memakai rantai hash lebih sederhana dan tidak mengklaim sifat forward-security yang setara.
 
-### [10] Secure logging and truncation
+### [10] Keamanan Log dan Pemotongan Riwayat
 
-- **Authors:** Di Ma, Gene Tsudik.
-- **Title:** A New Approach to Secure Logging.
-- **Publication / year:** *ACM Transactions on Storage*, 5(1), Article 2, 2009.
+- **Penulis:** Di Ma, Gene Tsudik.
+- **Judul:** A New Approach to Secure Logging.
+- **Publikasi / tahun:** *ACM Transactions on Storage*, 5(1), Article 2, 2009.
 - **DOI:** [10.1145/1502777.1502779](https://doi.org/10.1145/1502777.1502779).
-- **Relevance:** Secure-history and tail-truncation motivation for retaining independent checkpoints.
+- **Relevansi:** Dasar keamanan riwayat dan masalah pemotongan bagian akhir yang memotivasi checkpoint independen.
 
-### [11] HMAC construction
+### [11] Konstruksi HMAC
 
-- **Authors:** Mihir Bellare, Ran Canetti, Hugo Krawczyk.
-- **Title:** Keying Hash Functions for Message Authentication.
-- **Publication / year:** *Advances in Cryptology-CRYPTO '96*, Lecture Notes in Computer Science, 1-15, 1996.
+- **Penulis:** Mihir Bellare, Ran Canetti, Hugo Krawczyk.
+- **Judul:** Keying Hash Functions for Message Authentication.
+- **Publikasi / tahun:** *Advances in Cryptology-CRYPTO '96*, Lecture Notes in Computer Science, 1-15, 1996.
 - **DOI:** [10.1007/3-540-68697-5_1](https://doi.org/10.1007/3-540-68697-5_1).
-- **Relevance:** Keyed message authentication underlying HMAC-SHA256 command verification.
+- **Relevansi:** Dasar autentikasi pesan berkunci untuk verifikasi perintah HMAC-SHA256.
 
-### [12] Compact FPGA SHA-256
+### [12] SHA-256 FPGA yang Ringkas
 
-- **Authors:** Rommel Garcia, Ignacio Algredo-Badillo, Miguel Morales-Sandoval, Claudia Feregrino-Uribe, Rene Cumplido.
-- **Title:** A compact FPGA-based processor for the Secure Hash Algorithm SHA-256.
-- **Publication / year:** *Computers & Electrical Engineering*, 40(1), 194-202, 2014.
+- **Penulis:** Rommel Garcia, Ignacio Algredo-Badillo, Miguel Morales-Sandoval, Claudia Feregrino-Uribe, Rene Cumplido.
+- **Judul:** A compact FPGA-based processor for the Secure Hash Algorithm SHA-256.
+- **Publikasi / tahun:** *Computers & Electrical Engineering*, 40(1), 194-202, 2014.
 - **DOI:** [10.1016/j.compeleceng.2013.11.014](https://doi.org/10.1016/j.compeleceng.2013.11.014).
-- **Relevance:** Area/throughput tradeoffs and reuse motivate a shared engine; paper metrics are not SafeTrace Lite resource results.
+- **Relevansi:** Pertimbangan area/throughput serta penggunaan ulang mendasari inti bersama. Metrik publikasi bukan hasil penggunaan sumber daya SafeTrace Lite.
 
-### [13] SHA implementation tradeoffs
+### [13] Pertimbangan Implementasi SHA
 
-- **Authors:** Imtiaz Ahmad, A. Shoba Das.
-- **Title:** Hardware implementation analysis of SHA-256 and SHA-512 algorithms on FPGAs.
-- **Publication / year:** *Computers & Electrical Engineering*, 31(6), 345-360, 2005.
+- **Penulis:** Imtiaz Ahmad, A. Shoba Das.
+- **Judul:** Hardware implementation analysis of SHA-256 and SHA-512 algorithms on FPGAs.
+- **Publikasi / tahun:** *Computers & Electrical Engineering*, 31(6), 345-360, 2005.
 - **DOI:** [10.1016/j.compeleceng.2005.07.001](https://doi.org/10.1016/j.compeleceng.2005.07.001).
-- **Relevance:** Hardware area/performance tradeoffs; final resource estimates require the actual target synthesis.
+- **Relevansi:** Pertimbangan area/kinerja perangkat keras. Angka sumber daya akhir harus berasal dari sintesis pada target aktual.
 
-## DOI-bearing official technical standards
+## Standar Teknis Resmi Ber-DOI
 
-These are technical standards/guidelines, separate from the peer-reviewed papers above.
+Bagian ini berisi standar/panduan teknis resmi, dipisahkan dari publikasi ilmiah yang ditelaah sejawat di atas.
 
-### [14] SHA-256 specification
+### [14] Spesifikasi SHA-256
 
-- **Author:** National Institute of Standards and Technology.
-- **Title:** Secure Hash Standard (SHS).
-- **Publication / year:** FIPS 180-4, 2015.
+- **Penulis:** National Institute of Standards and Technology.
+- **Judul:** Secure Hash Standard (SHS).
+- **Publikasi / tahun:** FIPS 180-4, 2015.
 - **DOI:** [10.6028/NIST.FIPS.180-4](https://doi.org/10.6028/NIST.FIPS.180-4).
-- **Relevance:** SHA-256 algorithm/padding and known-answer verification baseline.
-- **Official record:** [NIST FIPS 180-4](https://csrc.nist.gov/pubs/fips/180-4/upd1/final).
+- **Relevansi:** Dasar algoritma/padding SHA-256 dan verifikasi dengan hasil acuan yang diketahui.
+- **Sumber resmi:** [NIST FIPS 180-4](https://csrc.nist.gov/pubs/fips/180-4/upd1/final).
 
-### [15] HMAC specification
+### [15] Spesifikasi HMAC
 
-- **Author:** National Institute of Standards and Technology.
-- **Title:** The Keyed-Hash Message Authentication Code (HMAC).
-- **Publication / year:** FIPS 198-1, 2008.
+- **Penulis:** National Institute of Standards and Technology.
+- **Judul:** The Keyed-Hash Message Authentication Code (HMAC).
+- **Publikasi / tahun:** FIPS 198-1, 2008.
 - **DOI:** [10.6028/NIST.FIPS.198-1](https://doi.org/10.6028/NIST.FIPS.198-1).
-- **Relevance:** HMAC construction for shared-core controller/reference-model comparison.
-- **Official record:** [NIST FIPS 198-1](https://csrc.nist.gov/pubs/fips/198-1/final). The official page carries a June 2025 planning note about proposed withdrawal/content migration; this bibliography retains the proposal's cited edition and does not assert certification or a current compliance status.
+- **Relevansi:** Dasar konstruksi HMAC untuk membandingkan pengendali inti bersama dengan model referensi.
+- **Sumber resmi:** [NIST FIPS 198-1](https://csrc.nist.gov/pubs/fips/198-1/final). Halaman resmi memuat catatan rencana Juni 2025 mengenai usulan pencabutan/pemindahan isi. Daftar pustaka mempertahankan edisi yang dikutip proposal dan tidak menyatakan sertifikasi atau status kepatuhan terkini.
 
-### [16] Firmware resiliency
+### [16] Ketahanan Firmware
 
-- **Author:** Andrew Regenscheid.
-- **Title:** Platform Firmware Resiliency Guidelines.
-- **Publication / year:** NIST SP 800-193, 2018.
+- **Penulis:** Andrew Regenscheid.
+- **Judul:** Platform Firmware Resiliency Guidelines.
+- **Publikasi / tahun:** NIST SP 800-193, 2018.
 - **DOI:** [10.6028/NIST.SP.800-193](https://doi.org/10.6028/NIST.SP.800-193).
-- **Relevance:** Firmware protection/detection/recovery and anti-rollback motivation. Digest/version comparison alone is not full platform resiliency.
-- **Official record:** [NIST SP 800-193](https://csrc.nist.gov/pubs/sp/800/193/final).
+- **Relevansi:** Dasar perlindungan, deteksi, pemulihan firmware, dan anti-rollback. Perbandingan digest/versi saja belum memenuhi ketahanan platform secara penuh.
+- **Sumber resmi:** [NIST SP 800-193](https://csrc.nist.gov/pubs/sp/800/193/final).
 
-## Metadata corrections and requirements documents
+## Koreksi Metadata dan Dokumen Persyaratan
 
-Publisher-deposited metadata identifies [1]'s author as **Omer Rana**, adds **Rene Cumplido** omitted in the proposal's [12], and identifies [13]'s second author as **A. Shoba Das** rather than the abbreviated "A. S. Das". These are bibliographic clarifications, not architectural changes. Names are transliterated to ASCII where appropriate.
+Metadata penerbit mengidentifikasi penulis [1] sebagai **Omer Rana**, menambahkan **Rene Cumplido** yang terlewat pada [12] proposal, dan mengidentifikasi penulis kedua [13] sebagai **A. Shoba Das**, bukan singkatan "A. S. Das". Koreksi ini bersifat bibliografis dan tidak mengubah arsitektur. Nama ditransliterasikan ke ASCII sesuai kebutuhan.
 
-The PERURI competition guidebook/template and DE10-Nano board documentation are **requirements/device specifications**, not DOI scientific evidence. They were not separately supplied here. Board/resource statements in this repository are attributed to the proposal and must be checked against the exact Quartus device report/board manual during implementation. No extra non-DOI scientific references have been added.
+Panduan/template kompetisi PERURI dan dokumentasi board DE10-Nano merupakan **persyaratan atau spesifikasi perangkat**, dipisahkan dari bukti ilmiah ber-DOI. Dokumen tersebut tidak diberikan secara terpisah. Pernyataan board/sumber daya di repositori mengacu pada proposal dan harus dicocokkan dengan laporan device Quartus serta manual board saat implementasi. Referensi ilmiah tambahan tanpa DOI tidak ditambahkan.

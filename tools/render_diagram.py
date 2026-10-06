@@ -1,8 +1,8 @@
-"""Render the repository's Mermaid topology to a real PNG using Pillow.
+"""Bentuk PNG dari topologi Mermaid repositori menggunakan Pillow.
 
-Fallback for environments without Mermaid CLI. Labels/edges come from .mmd;
-presentation coordinates below are deliberately fixed for this architecture.
-Run: python tools/render_diagram.py. Pillow is needed only to regenerate PNG.
+Alternatif saat Mermaid CLI tidak tersedia. Label/hubungan berasal dari .mmd;
+koordinat presentasi di bawah ditetapkan khusus untuk arsitektur ini.
+Jalankan: python tools/render_diagram.py. Pillow diperlukan untuk membentuk ulang PNG.
 """
 
 from pathlib import Path
@@ -26,13 +26,13 @@ BOXES = {
     'BACKEND': (2140, 1490, 2510, 1630),
 }
 
-# (polyline, label center, label wrap width); endpoints stop at node boundaries.
+# (jalur, pusat label, lebar teks); ujung jalur berhenti pada batas simpul.
 ROUTES = {
     ('SENDER', 'HPS'): ([(520, 255), (800, 255)], (660, 225), 255),
     ('HPS', 'BOOT'): ([(1060, 330), (1060, 490)], (1210, 385), 270),
     ('HPS', 'HMAC'): ([(1320, 255), (1680, 255), (1680, 700), (1115, 700), (1115, 790)], (1820, 650), 245),
     ('CONFIG', 'BOOT'): ([(850, 550), (1000, 550)], (925, 505), 145),
-    ('CONFIG', 'HMAC'): ([(850, 580), (915, 580), (915, 850), (1000, 850)], (905, 765), 175),
+    ('CONFIG', 'HMAC'): ([(850, 580), (915, 580), (915, 850), (1000, 850)], (845, 780), 175),
     ('CONFIG', 'POLICY'): ([(850, 620), (935, 620), (935, 1030), (1000, 1030)], (915, 900), 175),
     ('BOOT', 'GATE'): ([(1620, 555), (1710, 555), (1710, 1320), (1620, 1320)], (1830, 900), 230),
     ('HMAC', 'REPLAY'): ([(1230, 850), (1390, 850)], (1310, 820), 155),
@@ -55,7 +55,7 @@ def read_topology():
     nodes = dict(re.findall(r'^\s*(\w+)\["([^"]+)"\]', source, re.M))
     edges = re.findall(r'^\s*(\w+)\s+(-->|<-\.->)\|([^|]+)\|\s+(\w+)\s*$', source, re.M)
     if set(nodes) != set(BOXES) or {(a, b) for a, _, _, b in edges} != set(ROUTES):
-        raise ValueError('Mermaid topology changed: update BOXES/ROUTES before rendering')
+        raise ValueError('Topologi Mermaid berubah: perbarui BOXES/ROUTES sebelum membuat PNG')
     return nodes, edges
 
 
@@ -74,12 +74,12 @@ def main():
     draw = ImageDraw.Draw(canvas)
     ink = '#15324d'
     draw.text((60, 40), 'SafeTrace Lite', font=font(56, True), fill=ink)
-    draw.text((60, 110), 'Boot integrity  /  authenticated safe action  /  verifiable evidence', font=font(30), fill='#5b7085')
-    draw.text((1730, 65), 'PROPOSED ARCHITECTURE', font=font(28, True), fill='#5b7085')
+    draw.text((60, 110), 'Integritas awal  /  tindakan autentik yang aman  /  bukti terverifikasi', font=font(30), fill='#5b7085')
+    draw.text((1730, 65), 'USULAN ARSITEKTUR', font=font(28, True), fill='#5b7085')
     draw.rounded_rectangle((420, 410, 2090, 1420), radius=24, fill='#f8fbfe', outline='#2c5c85', width=4)
-    draw.text((450, 435), 'FPGA FABRIC - SafeTrace Lite', font=font(30, True), fill=ink)
+    draw.text((450, 435), 'FABRIC FPGA - SafeTrace Lite', font=font(30, True), fill=ink)
     draw.rounded_rectangle((960, 740, 1660, 1130), radius=18, fill='#fffcf5', outline='#d1a04b', width=3)
-    draw.text((985, 750), 'Runtime Command Guard', font=font(25, True), fill='#73521c')
+    draw.text((985, 750), 'Pengaman Perintah Saat Operasi', font=font(25, True), fill='#73521c')
 
     def arrowhead(tip, previous, color):
         angle = math.atan2(tip[1] - previous[1], tip[0] - previous[0])
@@ -163,18 +163,18 @@ def main():
 
     draw.line((65, 1685, 145, 1685), fill='#476b8c', width=4)
     arrowhead((145, 1685), (65, 1685), '#476b8c')
-    draw.text((165, 1668), 'Data / decision / configuration', font=font(24), fill=ink)
+    draw.text((165, 1668), 'Data / keputusan / konfigurasi', font=font(24), fill=ink)
     segment((650, 1685), (730, 1685), '#9274bd', True)
     arrowhead((730, 1685), (650, 1685), '#9274bd')
     arrowhead((650, 1685), (730, 1685), '#9274bd')
-    draw.text((750, 1668), 'Shared SHA request + result', font=font(24), fill=ink)
-    draw.text((1420, 1668), 'Default/reset: BLOCK. Every runtime decision is logged.', font=font(24), fill=ink)
-    draw.text((65, 1720), 'MVP: test-image gate, not native board secure boot. Tamper evidence requires a trusted checkpoint.',
+    draw.text((750, 1668), 'Permintaan + hasil SHA bersama', font=font(24), fill=ink)
+    draw.text((1420, 1668), 'Awal/reset: BLOCK. Setiap keputusan runtime dicatat.', font=font(24), fill=ink)
+    draw.text((65, 1720), 'MVP: gerbang image uji, tanpa mengganti secure boot board. Bukti perubahan memerlukan checkpoint tepercaya.',
               font=font(23), fill='#5b7085')
     canvas.save(OUTPUT, format='PNG', optimize=True, dpi=(150, 150))
     with Image.open(OUTPUT) as check:
         check.verify()
-    print(f'Rendered {OUTPUT.name}: 2560 x 1780 RGB PNG; {len(nodes)} nodes, {len(edges)} source edges')
+    print(f'PNG dibuat: {OUTPUT.name}, 2560 x 1780 RGB; {len(nodes)} simpul, {len(edges)} hubungan dari sumber')
 
 
 if __name__ == '__main__':

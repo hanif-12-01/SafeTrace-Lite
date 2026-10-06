@@ -1,4 +1,4 @@
-# Local secrets and provisioning material
+# Rahasia lokal dan bahan provisioning
 .env
 .env.*
 !.env.example
@@ -6,7 +6,7 @@
 *.key
 credentials.json
 
-# Python / editor caches
+# Cache Python / editor
 __pycache__/
 *.py[cod]
 .venv/
@@ -18,7 +18,7 @@ htmlcov/
 Thumbs.db
 .DS_Store
 
-# Simulation and FPGA build products
+# Hasil build simulasi dan FPGA
 obj_dir/
 work/
 *.vcd
@@ -31,7 +31,7 @@ output_files/
 *.rbf
 *.qws
 
-# Local source proposal and scratch files; documentation PNG is intentional
+# Proposal sumber lokal dan file sementara; PNG dokumentasi sengaja disertakan
 *.pdf
 tmp/
 node_modules/

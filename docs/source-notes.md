@@ -1,51 +1,51 @@
-# Proposal Traceability and Open Decisions
+# Ketertelusuran Proposal dan Keputusan Desain
 
-The conceptual source is *SafeTrace_Lite_PERURI_Proposal_DOI_Revisi (1).pdf*, 11 pages, supplied by the project owner. It is intentionally not committed: repository content does not need team/contact placeholders or the original attachment. Publication metadata verification supplements the bibliography only; it does not replace the proposal as the design authority.
+Acuan konsep adalah *SafeTrace_Lite_PERURI_Proposal_DOI_Revisi (1).pdf*, 11 halaman, yang diberikan pemilik proyek. PDF tidak dimasukkan ke repositori karena lampiran asli serta isian identitas/kontak tim tidak diperlukan untuk dokumentasi ini. Verifikasi metadata publikasi melengkapi daftar pustaka; proposal tetap menjadi acuan arsitektur.
 
-Source PDF SHA-256: `a3109a4277d083e495f03d3f41c476e26162a627e7c02eaddd0fc3f1660fa12f`. This identifies the reviewed revision without publishing the attachment.
+SHA-256 PDF sumber: `a3109a4277d083e495f03d3f41c476e26162a627e7c02eaddd0fc3f1660fa12f`. Nilai ini mengidentifikasi revisi yang ditelaah tanpa memublikasikan lampiran.
 
-## Source mapping
+## Pemetaan Sumber
 
-| Proposal location | Repository coverage |
+| Bagian proposal | Cakupan repositori |
 | --- | --- |
-| pp. 1-2, Executive Summary | README overview/solution, architecture lifecycle and hardware split |
-| pp. 2-3, Problem Statement | README problem, research motivation and novelty boundary |
-| pp. 3-4, Threat Model and MVP | README limitations, architecture security boundary |
-| p. 4, Figures 1-2 | Mermaid/PNG: HPS transport, trusted sensor proxy, FPGA checks, actuation, audit/checkpoint |
-| pp. 4-5, Principles and RTL modules | Architecture module specifications and workflows |
-| pp. 5-6, Event format, equations, memory | Architecture cryptography/memory; model event packing |
-| p. 6, Interfaces/security/area | Architecture host lock/default-deny/shared core |
-| pp. 7-9, Budgets and section 3.2 | README targets, verification T1-T12 and measurement requirements |
-| pp. 9-10, References [1]-[16] | DOI bibliography, with metadata corrections recorded there |
-| pp. 10-11, Bootcamp and future work | README roadmap and simulation integration plan |
+| Halaman 1-2, Ringkasan Ide | Gambaran/solusi README, siklus kepercayaan, dan pembagian perangkat keras |
+| Halaman 2-3, Latar Belakang dan Rumusan Masalah | Masalah, motivasi penelitian, dan batas kebaruan |
+| Halaman 3-4, Model Ancaman dan MVP | Batasan README dan batas keamanan arsitektur |
+| Halaman 4, Gambar 1-2 | Mermaid/PNG: transport HPS, proksi sensor tepercaya, pemeriksaan FPGA, aktuasi, audit/checkpoint |
+| Halaman 4-5, Prinsip Kerja dan Modul RTL | Spesifikasi modul dan alur kerja arsitektur |
+| Halaman 5-6, Format Peristiwa, Persamaan, dan Memori | Kriptografi/memori dan pengemasan peristiwa model |
+| Halaman 6, Antarmuka, Keamanan, dan Area | Penguncian host, default-deny, dan inti bersama |
+| Halaman 7-9, Estimasi dan Bagian 3.2 | Target README, T1-T12, dan persyaratan pengukuran |
+| Halaman 9-10, Referensi [1]-[16] | Daftar pustaka DOI beserta koreksi metadata |
+| Halaman 10-11, Bootcamp dan Pengembangan Lanjutan | Peta jalan README dan rencana integrasi simulasi |
 
-## Clarifications without changing the concept
+## Klarifikasi Konsep
 
-The example event fields total 128 bits. Previous hash (256) + event (128) = 384 message bits before SHA padding, not a 384-bit event plus previous hash. The one-block conclusion in the proposal remains valid.
+Contoh field peristiwa berjumlah 128 bit. Hash sebelumnya (256) + peristiwa (128) = 384 bit pesan sebelum padding SHA. Jadi, 384 bit bukan ukuran peristiwa yang masih harus ditambah hash sebelumnya. Kesimpulan satu blok pada proposal tetap berlaku.
 
-An audit event records the gate decision, not actuator completion or a physically authenticated timestamp. `timestamp_low` is a supplied demo field, not a secure clock. HMAC authenticates commands, not the independently sampled sensor state.
+Peristiwa audit mencatat keputusan gerbang. Catatan itu tidak membuktikan aktuator telah menyelesaikan tindakan atau timestamp telah diautentikasi secara fisik. `timestamp_low` merupakan field masukan demo, bukan jam tepercaya. HMAC mengautentikasi perintah; status sensor diambil secara terpisah.
 
-## Model conventions, not finalized hardware requirements
+## Asumsi Model dan Spesifikasi yang Belum Final
 
-| Decision | Software convention / outstanding RTL work |
+| Keputusan | Asumsi perangkat lunak dan pekerjaan RTL berikutnya |
 | --- | --- |
-| Command encoding | Big-endian `command_id:u8`, `value:u16`, `sequence:u32`; all seven bytes enter HMAC. Only command ID 1 (speed percentage) is supported in this model. Proposal does not fix these widths/encoding. |
-| Event encoding | The proposal's 128-bit example, big-endian. Decision/reason byte uses bit 7 for ALLOW and low 7 bits for a model reason enumeration. |
-| Policy | Speed <=80%, temperature <=70 in example fixtures. Speed limit 80 comes from proposal; temperature 70 is a test fixture, not a required physical threshold. |
-| Sequence commit | A fresh authenticated command consumes its sequence before policy evaluation, even if policy denies it. Invalid HMAC does not advance state. Width/commit semantics still need approval within RTL design. |
-| Genesis | Model hashes a domain label, device ID, measured image digest, supplied version and boot reason. This deterministically binds the boot outcome for software tests; exact hardware genesis/session format is pending. |
-| Boot lifecycle | One boot verification per model reset epoch. Commands before completed boot are rejected; demo assumes runtime begins after that verification. |
-| Reset | Runtime trust/sequence/counter/log state is cleared and outputs disabled; immutable demo configuration remains. Separate session identity and persistent anti-replay/anti-rollback are future decisions. Repeated identical boots yield identical model genesis. |
-| Checkpoint | In-memory immutable snapshot retained independently in a test variable. Verifier accepts a log extending that checkpoint and rejects missing or mismatched anchored prefixes. No network/backend is implemented. |
-| Buffer / transactions | Model stores an unbounded Python list and evaluates commands atomically. It does not model BRAM depth, overflow, scheduler cycles, mid-transaction reset, GPIO/PWM timing, or host-register locks. |
+| Pengodean perintah | Big-endian `command_id:u8`, `value:u16`, `sequence:u32`; ketujuh byte masuk ke HMAC. Model hanya mendukung ID 1 untuk persentase kecepatan. Lebar dan pengodean belum ditetapkan proposal. |
+| Pengodean peristiwa | Mengikuti contoh 128 bit proposal, big-endian. Byte keputusan/alasan memakai bit 7 untuk ALLOW dan 7 bit bawah untuk enumerasi alasan model. |
+| Kebijakan | Kecepatan <=80% dan suhu <=70 pada data uji. Batas kecepatan 80 berasal dari proposal; suhu 70 merupakan contoh pengujian, bukan ambang fisik wajib. |
+| Pembaruan nomor urut | Perintah autentik dengan nomor baru memakai nomor itu sebelum evaluasi kebijakan, termasuk jika kebijakan menolak. HMAC tidak valid tidak memperbarui nomor. Lebar dan aturan pembaruan harus ditetapkan dalam desain RTL. |
+| Genesis | Model menghitung hash label domain, ID perangkat, digest image terukur, versi masukan, dan hasil boot. Hasil boot terikat secara deterministik untuk uji perangkat lunak; format genesis/sesi perangkat keras belum final. |
+| Siklus boot | Satu verifikasi boot per periode reset model. Perintah sebelum boot selesai ditolak; demo memulai operasi setelah verifikasi tersebut. |
+| Reset | Kepercayaan, nomor urut, penghitung, dan log runtime dibersihkan; keluaran tidak aktif. Konfigurasi demo yang tetap dipertahankan. Identitas sesi terpisah dan anti-replay/anti-rollback persisten belum ditetapkan. Boot identik menghasilkan genesis model yang identik. |
+| Checkpoint | Snapshot tetap di memori, disimpan secara independen dalam variabel pengujian. Verifikasi menerima kelanjutan log yang sah, tetapi menolak bagian terjangkar yang hilang atau tidak sesuai. Jaringan/backend belum diimplementasikan. |
+| Buffer dan transaksi | Model menyimpan list Python tanpa batas kapasitas dan mengevaluasi perintah secara atomik. Kedalaman BRAM, buffer penuh, siklus penjadwal, reset di tengah transaksi, timing GPIO/PWM, dan penguncian register host tidak dimodelkan. |
 
-## Issues to settle before RTL integration
+## Keputusan Sebelum Integrasi RTL
 
-1. Bind image security-version metadata to a trusted image manifest/digest. The proposal compares a supplied version; HPS-supplied metadata alone is not proof of the image's true version.
-2. Define replay/counter/session persistence across reset and reconfiguration, counter rollover, and backend epoch selection. The prototype establishes within-session monotonicity only.
-3. Define key/digest/policy provisioning, configuration-lock/reset behavior and protection from host reads/writes.
-4. Define scheduler fairness, SHA state ownership, transaction capture/backpressure, event-buffer overflow, and whether log failure must inhibit actuation. Silent evidence loss must not be presented as complete logging.
-5. Define genesis bytes, checkpoint authenticity/retention and coherent counter/head readout. A hostile transport must not be able to create a falsely trusted anchor.
-6. Define reset precedence and completion semantics for pending authentication/output/log operations, actuator signal duration, sensor snapshot timing and malformed-command handling.
+1. Ikat metadata versi keamanan dengan manifest/digest image tepercaya. Versi yang diberikan HPS saja tidak membuktikan versi asli image.
+2. Tetapkan persistensi nomor urut/penghitung/sesi saat reset dan rekonfigurasi, penanganan batas penghitung, serta pemilihan periode oleh backend. Prototipe hanya menetapkan kenaikan monoton dalam sesi.
+3. Tetapkan penyediaan kunci/digest/kebijakan, perilaku penguncian/reset, dan perlindungan dari pembacaan atau penulisan host.
+4. Tetapkan keadilan penjadwal, kepemilikan state SHA, penangkapan transaksi/backpressure, buffer peristiwa penuh, serta apakah kegagalan log harus menghambat aktuasi. Kehilangan bukti tanpa pemberitahuan tidak boleh dianggap pencatatan lengkap.
+5. Tetapkan byte genesis, autentisitas/retensi checkpoint, dan pembacaan penghitung/hash yang konsisten. Transport yang dikuasai penyerang tidak boleh membentuk anchor yang dianggap tepercaya secara keliru.
+6. Tetapkan prioritas reset, penyelesaian operasi autentikasi/keluaran/log yang tertunda, durasi sinyal aktuator, waktu pengambilan sensor, dan penanganan perintah tidak sah.
 
-These are specification gaps and proposed follow-up decisions, not claims that additional production security has already been implemented.
+Daftar ini mencatat celah spesifikasi serta usulan keputusan lanjutan. Fitur keamanan produksi tambahan belum diimplementasikan.

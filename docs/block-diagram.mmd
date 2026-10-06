@@ -1,45 +1,45 @@
-%% SafeTrace Lite - proposed architecture, not implemented hardware.
-%% Local fallback PNG: python tools/render_diagram.py (requires Pillow).
+%% SafeTrace Lite - usulan arsitektur; perangkat keras belum diimplementasikan.
+%% Pembentukan PNG lokal: python tools/render_diagram.py (memerlukan Pillow).
 flowchart TB
-    SENDER["Trusted Command Sender<br/>HMAC tag + sequence"]
-    HPS["DE10-Nano HPS ARM<br/>UI / image / command transport"]
-    SENSOR["Trusted Sensor Proxy<br/>Switches / ADC / GPIO"]
-    subgraph FPGA["FPGA Fabric - SafeTrace Lite"]
-        CONFIG["Trusted Configuration<br/>Digest / key / min version / policy<br/>Protected after lock"]
-        BOOT["Boot Integrity Gate<br/>Image SHA-256 + version check"]
-        subgraph RUNTIME["Runtime Command Guard"]
-            HMAC["HMAC Verification<br/>HMAC-SHA256"]
-            REPLAY["Replay Guard<br/>Increasing sequence"]
-            POLICY["Safety Policy Engine<br/>Value limit + sensor context"]
+    SENDER["Pengirim Perintah Tepercaya<br/>HMAC + nomor urut"]
+    HPS["DE10-Nano HPS ARM<br/>UI / image / transport perintah"]
+    SENSOR["Proksi Sensor Tepercaya<br/>Sakelar / ADC / GPIO"]
+    subgraph FPGA["Fabric FPGA - SafeTrace Lite"]
+        CONFIG["Konfigurasi Tepercaya<br/>Digest / kunci / versi / kebijakan<br/>Terlindungi setelah dikunci"]
+        BOOT["Gerbang Integritas Awal<br/>SHA-256 image + versi minimum"]
+        subgraph RUNTIME["Pengaman Perintah Saat Operasi"]
+            HMAC["Verifikasi HMAC<br/>HMAC-SHA256"]
+            REPLAY["Pengaman Replay<br/>Nomor urut meningkat"]
+            POLICY["Mesin Kebijakan Keselamatan<br/>Batas nilai + kondisi sensor"]
         end
-        GATE["Output Gate<br/>ALLOW iff all checks pass<br/>BLOCK = inactive output"]
-        SCHED["SHA Scheduler<br/>Boot / HMAC / log arbitration"]
-        SHA["Shared SHA-256 Core<br/>One hardware engine"]
-        LOG["TrustLog<br/>Event counter + hash chain<br/>Recent-event BRAM buffer"]
+        GATE["Gerbang Keluaran<br/>ALLOW: semua syarat lolos<br/>BLOCK: keluaran tidak aktif"]
+        SCHED["Penjadwal SHA<br/>Arbitrasi boot / HMAC / log"]
+        SHA["Inti SHA-256 Bersama<br/>Satu mesin perangkat keras"]
+        LOG["TrustLog<br/>Penghitung + rantai hash<br/>Buffer BRAM terbaru"]
     end
-    ACTUATOR["Actuator Demo<br/>LED / PWM / low-voltage driver"]
-    STORE["Audit Storage / HPS<br/>Events + hashes / snapshot relay"]
-    BACKEND["Backend Checkpoint<br/>Device ID + counter + chain head"]
+    ACTUATOR["Demo Aktuator<br/>LED / PWM / driver tegangan rendah"]
+    STORE["Penyimpanan Audit / HPS<br/>Peristiwa + hash / relay snapshot"]
+    BACKEND["Checkpoint Backend<br/>ID + penghitung + hash terakhir"]
 
-    SENDER -->|authenticated frame| HPS
-    HPS -->|image + version / Avalon-MM| BOOT
-    HPS -->|command transport / Avalon-MM| HMAC
-    CONFIG -->|digest + minimum version| BOOT
-    CONFIG -->|protected key| HMAC
-    CONFIG -->|locked thresholds| POLICY
+    SENDER -->|frame autentik| HPS
+    HPS -->|image + versi / Avalon-MM| BOOT
+    HPS -->|transport perintah / Avalon-MM| HMAC
+    CONFIG -->|digest + versi minimum| BOOT
+    CONFIG -->|kunci terlindungi| HMAC
+    CONFIG -->|ambang terkunci| POLICY
     BOOT -->|SYSTEM_TRUSTED| GATE
     HMAC -->|HMAC_VALID| REPLAY
     REPLAY -->|FRESH_SEQUENCE| POLICY
-    SENSOR -->|trusted process state| POLICY
-    POLICY -->|POLICY_VALID + checked command| GATE
-    GATE -->|ALLOW: gated GPIO/PWM| ACTUATOR
-    GATE -->|every ALLOW/BLOCK + reason| LOG
-    LOG -->|events + hashes / FPGA snapshot| STORE
-    STORE -->|HPS forwards device / counter / head| BACKEND
-    BOOT <-.->|hash service| SCHED
-    HMAC <-.->|hash service| SCHED
-    LOG <-.->|hash service| SCHED
-    SCHED <-.->|512-bit block / 256-bit digest| SHA
+    SENSOR -->|kondisi proses tepercaya| POLICY
+    POLICY -->|POLICY_VALID + perintah terperiksa| GATE
+    GATE -->|ALLOW: GPIO/PWM terkendali| ACTUATOR
+    GATE -->|ALLOW/BLOCK + alasan| LOG
+    LOG -->|peristiwa + hash / snapshot FPGA| STORE
+    STORE -->|HPS: ID / penghitung / hash| BACKEND
+    BOOT <-.->|layanan hash| SCHED
+    HMAC <-.->|layanan hash| SCHED
+    LOG <-.->|layanan hash| SCHED
+    SCHED <-.->|blok 512 bit / digest 256 bit| SHA
 
     classDef host fill:#eff5fc,stroke:#64748b,color:#152f4b
     classDef boot fill:#e7f1ff,stroke:#2563eb,color:#152f4b

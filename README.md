@@ -1,70 +1,74 @@
 # SafeTrace Lite
 
-**Lightweight FPGA Lifecycle Security Core for Industrial Cyber-Physical Systems**
+**Inti keamanan siklus hidup berbasis FPGA yang ringan untuk sistem siber-fisik industri**
 
-**"Trust what runs. Trust what acts. Trust what happened."**
+**"Percaya pada yang dijalankan. Percaya pada tindakan yang dilakukan. Percaya pada peristiwa yang tercatat."**
 
-## Project Overview
+## Gambaran Proyek
 
-SafeTrace Lite proposes a small FPGA security IP core connecting application-image integrity, authenticated safe actuation, and verifiable decision history. The design targets the **DE10-Nano / Cyclone V FPGA** for PERURI Chip Hackathon 2026. A single shared SHA-256 hardware core serves all three security layers.
+SafeTrace Lite merupakan usulan inti kekayaan intelektual (*IP core*) keamanan berbasis FPGA yang menghubungkan integritas image aplikasi, otorisasi tindakan aktuator yang aman, dan riwayat keputusan yang dapat diverifikasi. Proyek ini ditujukan untuk **PERURI Chip Hackathon 2026**, dengan target **DE10-Nano / FPGA Cyclone V**. Ketiga lapisan keamanan menggunakan satu inti perangkat keras SHA-256 secara bersama.
 
-The source of truth is the supplied *SafeTrace Lite PERURI Proposal DOI Revisi*, an 11-page proposal. This repository translates that design into specifications and a software functional reference model. [Source mapping and open design decisions](docs/source-notes.md) distinguish proposal requirements from model conventions.
+Acuan utama desain adalah *SafeTrace Lite PERURI Proposal DOI Revisi*, proposal 11 halaman yang diberikan pemilik proyek. Repositori ini menerjemahkan desain tersebut menjadi spesifikasi teknis dan model referensi fungsional perangkat lunak. [Catatan sumber dan keputusan desain](docs/source-notes.md) memisahkan ketentuan proposal dari asumsi model.
 
-## Problem Statement
+## Latar Belakang dan Rumusan Masalah
 
-Industrial cyber-physical systems connect software and networks to sensors, actuators, and physical processes. A modified application image, a forged or replayed command, or an authentic command that violates a physical limit can affect the process. Editable logs can also weaken incident evidence. SafeTrace Lite proposes a hardware checkpoint joining the image that is accepted, the action that is allowed, and the decision that is recorded. Its contribution is this integration and resource sharing, rather than a new cryptographic primitive or a claim of being the first such system.
+Sistem siber-fisik industri menghubungkan perangkat lunak dan jaringan dengan sensor, aktuator, serta proses fisik. Modifikasi image aplikasi, pemalsuan atau pengulangan perintah, maupun perintah autentik yang melanggar batas keselamatan dapat memengaruhi proses tersebut. Log yang dapat diubah juga mengurangi keandalan bukti insiden.
 
-## Proposed Solution
+SafeTrace Lite mengusulkan titik pemeriksaan kepercayaan di perangkat keras yang menghubungkan image yang diterima, tindakan yang diizinkan, dan keputusan yang dicatat. Kontribusinya berada pada integrasi siklus hidup serta penggunaan sumber daya bersama, tanpa mengklaim primitif kriptografi baru atau sistem pertama di dunia.
 
-The HPS ARM hosts the UI and transports test images, commands, and logs. FPGA fabric performs the security decisions. Startup verification establishes `SYSTEM_TRUSTED`; each subsequent command must pass authentication, freshness, and a deterministic safety policy. Every ALLOW/BLOCK decision becomes an audit event. A backend retains counter/hash checkpoints to help detect inconsistent or truncated histories.
+## Solusi yang Diusulkan
 
-## Three Security Layers
+HPS ARM menjalankan antarmuka pengguna dan menjadi jalur pengiriman image uji, perintah, serta log. Keputusan keamanan dilakukan pada FPGA. Verifikasi awal menetapkan `SYSTEM_TRUSTED`; setiap perintah selanjutnya harus memenuhi autentikasi, kebaruan nomor urut, dan kebijakan keselamatan deterministik. Setiap keputusan ALLOW/BLOCK dicatat sebagai peristiwa audit. Backend menyimpan checkpoint berupa penghitung dan hash untuk membantu mendeteksi riwayat yang tidak konsisten atau terpotong.
 
-| Layer | Checks / output | MVP boundary |
+## Tiga Lapisan Keamanan
+
+| Lapisan | Pemeriksaan dan keluaran | Batas MVP |
 | --- | --- | --- |
-| **Boot Integrity Gate** | SHA-256 image digest matches a trusted reference; security version meets the configured minimum | Verifies a test application image before `ACTUATOR_ENABLE`. It does not replace the board's native secure boot or provide production firmware signature verification. |
-| **Runtime Action Guard** | HMAC-SHA256, increasing sequence number, hardware safety policy; final ALLOW/BLOCK | An authenticated command still needs a safe value and sensor context. |
-| **TrustLog** | Event counter, SHA-256 hash chain, chain-head checkpoint | Tamper evidence through verification. Data can still be modified; unanchored tail deletion is not intrinsically detectable. |
+| **Boot Integrity Gate — Gerbang Integritas Awal** | Digest SHA-256 image sesuai acuan tepercaya; versi keamanan memenuhi batas minimum | Memverifikasi image aplikasi uji sebelum `ACTUATOR_ENABLE`. MVP tidak menggantikan secure boot bawaan board atau menyediakan verifikasi tanda tangan firmware untuk produksi. |
+| **Runtime Action Guard — Pengaman Tindakan Saat Operasi** | HMAC-SHA256, nomor urut yang meningkat, kebijakan keselamatan perangkat keras, dan keputusan ALLOW/BLOCK | Perintah yang autentik tetap harus memenuhi batas nilai dan kondisi sensor yang aman. |
+| **TrustLog — Jejak Audit Terverifikasi** | Penghitung peristiwa, rantai hash SHA-256, dan checkpoint hash terakhir | Perubahan dibuktikan melalui verifikasi. Data tetap dapat dimodifikasi; penghapusan bagian akhir yang belum tercakup checkpoint tidak selalu terdeteksi. |
 
 $$
 \mathrm{ALLOW} = \mathrm{SYSTEM\_TRUSTED} \land \mathrm{HMAC\_VALID} \land \mathrm{FRESH\_SEQUENCE} \land \mathrm{POLICY\_VALID}
 $$
 
-## System Architecture Diagram
+ALLOW berarti perintah diizinkan; BLOCK berarti perintah diblokir.
 
-![SafeTrace Lite proposed hardware architecture](docs/block-diagram.png)
+## Diagram Arsitektur Sistem
 
-Solid arrows carry data, configuration, or decisions. Dashed arrows identify SHA service requests/results. BLOCK leaves the output disabled; both decisions feed TrustLog. The FPGA boundary contains all decision logic. The figure is a design specification, not a hardware test result. [Editable Mermaid source](docs/block-diagram.mmd), [architecture details](docs/architecture.md), and [local PNG renderer](tools/render_diagram.py) are included.
+![Usulan arsitektur perangkat keras SafeTrace Lite](docs/block-diagram.png)
 
-## Hardware Target & Technology
+Panah utuh menunjukkan aliran data, konfigurasi, atau keputusan. Panah putus-putus menunjukkan permintaan dan hasil layanan SHA. BLOCK mempertahankan keluaran tidak aktif; kedua jenis keputusan masuk ke TrustLog. Batas FPGA mencakup seluruh logika keputusan. Diagram merupakan spesifikasi desain. [Sumber Mermaid yang dapat disunting](docs/block-diagram.mmd), [rincian arsitektur](docs/architecture.md), dan [skrip pembentuk PNG](tools/render_diagram.py) tersedia.
 
-Planned target: DE10-Nano, Cyclone V SE **5CSEBA6U23I7**, HPS ARM, Avalon-MM through the lightweight HPS-to-FPGA bridge, Platform Designer, and Verilog/SystemVerilog. Demo sensor inputs use switches/ADC/GPIO; demo outputs use LED/PWM or a low-voltage motor through a driver.
+## Target Perangkat Keras dan Teknologi
 
-The following are **engineering target — not measured result**, from proposal pp. 7-9:
+Target yang direncanakan adalah DE10-Nano, Cyclone V SE **5CSEBA6U23I7**, HPS ARM, Avalon-MM melalui lightweight HPS-to-FPGA bridge, Platform Designer, serta Verilog/SystemVerilog. Sensor demonstrasi menggunakan sakelar/ADC/GPIO; keluaran demonstrasi berupa LED/PWM atau motor bertegangan rendah melalui rangkaian driver.
 
-| Metric | Initial target |
+Angka berikut merupakan **target rekayasa — bukan hasil pengukuran**, berdasarkan proposal halaman 7-9:
+
+| Metrik | Target awal |
 | --- | --- |
-| FPGA clock | 50 MHz, subject to Quartus timing analysis |
-| Logic / registers | <=4,000 ALMs / <=5,000 FFs |
-| BRAM / DSP | <=128 Kbit / 0 DSP blocks |
-| SHA-256 block latency | <5 microseconds at 50 MHz |
-| Short-command HMAC latency | <25 microseconds at 50 MHz |
-| Policy evaluation | <=5 cycles after authentication/sequence checks |
-| TrustLog update | One SHA block for a 128-bit event plus 256-bit previous hash, plus control |
+| Frekuensi clock FPGA | 50 MHz; harus dibuktikan melalui analisis timing Quartus |
+| Logika dan register | <=4.000 ALM / <=5.000 FF |
+| BRAM dan DSP | <=128 Kbit / 0 blok DSP |
+| Latensi satu blok SHA-256 | <5 mikrodetik pada 50 MHz |
+| Latensi HMAC perintah pendek | <25 mikrodetik pada 50 MHz |
+| Evaluasi kebijakan | <=5 siklus setelah pemeriksaan autentikasi dan nomor urut |
+| Pembaruan TrustLog | Satu blok SHA untuk peristiwa 128 bit dan hash sebelumnya 256 bit, ditambah kendali |
 
-No RTL, synthesis, timing, power, or on-board result is available. Shared-core contention must be included in future end-to-end latency measurements.
+Hasil RTL, sintesis, timing, daya, dan pengujian board belum tersedia. Waktu tunggu akibat penggunaan inti bersama perlu diperhitungkan dalam pengukuran latensi menyeluruh.
 
-## Security-by-Design
+## Keamanan Sejak Tahap Perancangan
 
-The proposed output gate defaults to BLOCK during reset, untrusted boot, or error. Trusted digest, HMAC key, minimum version, and policy configuration belong to the FPGA trust boundary; host writes must be denied after configuration lock. The key remains protected from host readout. Sequence validation precedes policy execution. ALLOW and BLOCK are both logged. Hash chaining provides integrity evidence, not encryption or confidentiality.
+Gerbang keluaran dirancang dengan prinsip *default-deny*: BLOCK saat reset, boot belum tepercaya, atau terjadi kesalahan. Digest tepercaya, kunci HMAC, versi minimum, dan konfigurasi kebijakan berada dalam batas kepercayaan FPGA. Penulisan oleh host harus ditolak setelah konfigurasi dikunci, dan kunci tidak boleh terbaca oleh host. Pemeriksaan nomor urut mendahului evaluasi kebijakan. ALLOW maupun BLOCK sama-sama dicatat. Rantai hash memberikan bukti integritas; enkripsi dan kerahasiaan tidak termasuk MVP.
 
-## Threat Model & Limitations
+## Model Ancaman dan Batasan
 
-The MVP addresses modified test images, images below the minimum security version, invalid HMACs, replay within the current session, unsafe commands or sensor context, log modification, and checkpoint-visible tail truncation.
+MVP mencakup modifikasi image uji, versi di bawah minimum, HMAC tidak valid, replay dalam sesi yang sama, perintah atau kondisi sensor yang tidak aman, perubahan log, dan pemotongan log yang bertentangan dengan checkpoint tepercaya.
 
-It excludes invasive physical attacks, side channels, fault injection/key extraction, spoofing before the trusted sensor interface, network availability/DoS, full backend security, and production key provisioning. Backend anchors are assumed to be retained independently and trusted. Reset-safe persistence, authenticated image-version binding, checkpoint ingestion, and buffer-overflow behavior still need explicit RTL/protocol decisions; see [source notes](docs/source-notes.md). A linear unkeyed hash chain alone does not prevent complete history rewriting by an attacker who can also replace its trusted anchor.
+Di luar cakupan: serangan fisik invasif, side-channel, fault injection/ekstraksi kunci, pemalsuan sebelum antarmuka sensor tepercaya, ketersediaan jaringan/DoS, keamanan penuh backend, dan penyediaan kunci untuk produksi. Anchor backend diasumsikan tepercaya dan disimpan secara independen. Persistensi saat reset, pengikatan autentik versi dengan image, penerimaan checkpoint, dan penanganan buffer penuh masih memerlukan keputusan protokol/RTL; lihat [catatan sumber](docs/source-notes.md). Rantai hash tanpa kunci tidak mencegah penulisan ulang seluruh riwayat jika penyerang juga dapat mengganti anchor tepercayanya.
 
-## Project Structure
+## Struktur Repositori
 
 ```text
 SafeTrace-Lite/
@@ -90,9 +94,9 @@ SafeTrace-Lite/
     └── validate_repository.py
 ```
 
-## Verification Strategy
+## Strategi Verifikasi
 
-[The verification plan](docs/verification-plan.md) maps proposal section 3.2 to T1-T12. Run the functional model tests with Python 3.10+ and the standard library:
+[Rencana verifikasi](docs/verification-plan.md) memetakan bagian 3.2 proposal ke skenario T1-T12. Jalankan pengujian model dengan Python 3.10+ dan pustaka standar dari direktori utama repositori:
 
 ```sh
 python -m unittest discover -s tests -v
@@ -100,27 +104,27 @@ python -m simulation.demo
 python tools/validate_repository.py
 ```
 
-The model checks functional decisions and audit verification only. Planned Verilator/ModelSim plus cocotb work must separately verify RTL interfaces, SHA/HMAC known-answer vectors, scheduler ownership, cycle timing, and reset during transactions. Quartus and SignalTap will provide synthesis, timing, and physical-output evidence later. [Simulation roadmap](simulation/README.md) and [test coverage limits](tests/README.md) describe the distinction.
+Model hanya memeriksa keputusan fungsional dan verifikasi audit. Rencana Verilator/ModelSim dan cocotb harus memverifikasi antarmuka RTL, vektor SHA/HMAC dengan hasil acuan yang diketahui, kepemilikan inti oleh penjadwal, waktu per siklus, dan reset di tengah transaksi. Quartus dan SignalTap akan menyediakan bukti sintesis, timing, serta keluaran fisik. [Peta jalan simulasi](simulation/README.md) dan [batas cakupan pengujian](tests/README.md) menjelaskan perbedaannya.
 
-## Development Roadmap
+## Peta Jalan Pengembangan
 
-| Stage | Deliverables | Status |
+| Tahap | Luaran | Status |
 | --- | --- | --- |
-| Repository preparation | Architecture, diagram, verification specification, DOI bibliography | Included |
-| Functional reference | Python boot/HMAC/replay/policy/hash chain/checkpoint model | Included; software only |
-| Bootcamp day 1 | SHA integration, register interface, Boot Integrity Gate, SHA vectors, Action Guard skeleton | Planned |
-| Bootcamp day 2 | HMAC/replay/policy, fixed events, TrustLog, end-to-end RTL tests, Quartus report | Planned |
-| Bootcamp day 3 | HPS bridge, SignalTap, LED/PWM/motor demo, attack presets, video and measured metrics | Planned |
-| Future work | PUF/secure provisioning, ECC firmware signatures, provisionable locked policy tables, broader sensors and fault testing, optional ASIC exploration, Merkle/history trees | Outside MVP |
+| Penyiapan repositori | Arsitektur, diagram, spesifikasi verifikasi, daftar pustaka DOI | Tersedia |
+| Referensi fungsional | Model Python untuk boot/HMAC/replay/kebijakan/rantai hash/checkpoint | Tersedia; perangkat lunak saja |
+| Bootcamp hari 1 | Integrasi SHA, antarmuka register, Boot Integrity Gate, vektor SHA, kerangka Action Guard | Direncanakan |
+| Bootcamp hari 2 | HMAC/replay/kebijakan, peristiwa tetap, TrustLog, pengujian RTL menyeluruh, laporan Quartus | Direncanakan |
+| Bootcamp hari 3 | Bridge HPS, SignalTap, demo LED/PWM/motor, skenario serangan, video dan metrik terukur | Direncanakan |
+| Pengembangan lanjutan | PUF/penyediaan kunci aman, tanda tangan ECC firmware, tabel kebijakan yang dikunci, sensor dan uji gangguan tambahan, eksplorasi ASIC, Merkle/history tree | Di luar MVP |
 
-The three-day bootcamp schedule is the proposal's plan, not evidence of completed work. Optional Yosys/OpenROAD with SkyWater 130 nm is an exploratory future path.
+Jadwal bootcamp tiga hari merupakan rencana dalam proposal. Yosys/OpenROAD dengan SkyWater 130 nm merupakan jalur eksplorasi ASIC opsional.
 
-## Research References
+## Referensi Ilmiah
 
-[The DOI bibliography](docs/references.md) retains proposal references [1]-[16]: ICPS security [1]-[4], secure bootstrap/root of trust [5]-[6], runtime assurance and lightweight trusted hardware [7]-[8], secure logging [9]-[10], HMAC [11], FPGA SHA-256 [12]-[13], and DOI-bearing NIST technical standards [14]-[16]. Board/competition documents are identified separately as specifications and requirements.
+[Daftar pustaka DOI](docs/references.md) mempertahankan referensi [1]-[16] dari proposal: keamanan ICPS [1]-[4], secure bootstrap/akar kepercayaan [5]-[6], penjaminan keselamatan saat operasi dan perangkat keras tepercaya [7]-[8], pencatatan log aman [9]-[10], HMAC [11], FPGA SHA-256 [12]-[13], serta standar teknis NIST ber-DOI [14]-[16]. Dokumen board dan kompetisi dipisahkan sebagai spesifikasi serta persyaratan.
 
-## Project Status
+## Status Proyek
 
-**Proposed Architecture / Pre-Implementation**
+**Usulan Arsitektur / Praimplementasi**
 
-Documentation and a software functional reference model are present. FPGA RTL, cocotb integration, Quartus projects/bitstreams, synthesis, hardware tests, and benchmarks remain planned. Python test results cannot establish FPGA correctness, timing, resource use, or resistance to physical attacks.
+Dokumentasi dan model referensi fungsional perangkat lunak telah tersedia. RTL FPGA, integrasi cocotb, proyek/bitstream Quartus, sintesis, pengujian perangkat keras, dan benchmark masih direncanakan. Hasil pengujian Python tidak membuktikan kebenaran FPGA, timing, penggunaan sumber daya, atau ketahanan terhadap serangan fisik.

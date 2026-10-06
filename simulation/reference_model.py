@@ -1,7 +1,7 @@
-"""Atomic software specification of selected proposal behavior.
+"""Spesifikasi perangkat lunak atomik untuk sebagian perilaku proposal.
 
-Serialization, sequence consumption and genesis are model conventions.
-No RTL, timing, trusted Python execution, or production key storage is modeled.
+Serialisasi, pemakaian nomor urut, dan genesis merupakan asumsi model.
+RTL, timing, eksekusi Python tepercaya, dan penyimpanan kunci produksi tidak dimodelkan.
 """
 
 from dataclasses import dataclass
@@ -18,7 +18,7 @@ COMMAND_FORMAT = struct.Struct('>BHI')
 
 def _uint(value: int, bits: int, name: str) -> None:
     if type(value) is not int or not 0 <= value < (1 << bits):
-        raise ValueError(f'{name} must be an unsigned {bits}-bit integer')
+        raise ValueError(f'{name} harus berupa bilangan bulat unsigned {bits} bit')
 
 
 class Reason(IntEnum):
@@ -37,18 +37,18 @@ class Configuration:
     key: bytes
     min_version: int
     max_speed: int = 80
-    max_temperature: int = 70  # Example test fixture, not a proposal requirement.
+    max_temperature: int = 70  # Contoh data uji, bukan persyaratan proposal.
 
     def __post_init__(self) -> None:
         if not isinstance(self.trusted_digest, bytes) or len(self.trusted_digest) != 32:
-            raise ValueError('trusted_digest must be 32 bytes')
+            raise ValueError('trusted_digest harus berukuran 32 byte')
         if not isinstance(self.key, bytes) or len(self.key) != 32:
-            raise ValueError('prototype key must be 32 bytes')
+            raise ValueError('kunci prototipe harus berukuran 32 byte')
         _uint(self.min_version, 16, 'min_version')
         _uint(self.max_temperature, 16, 'max_temperature')
         _uint(self.max_speed, 16, 'max_speed')
         if self.max_speed > 100:
-            raise ValueError('max_speed is a percentage from 0 to 100')
+            raise ValueError('max_speed adalah persentase dari 0 sampai 100')
 
 
 @dataclass(frozen=True)
@@ -67,7 +67,7 @@ class Command:
 
 
 def sign_command(key: bytes, command: Command) -> bytes:
-    """Trusted sender/test helper; never a proposed host-accessible FPGA key API."""
+    """Fungsi bantu pengirim tepercaya/pengujian; bukan API kunci FPGA yang dapat diakses host."""
     return hmac.new(key, command.payload(), hashlib.sha256).digest()
 
 
@@ -98,10 +98,10 @@ class Verification:
 
 def verify_log(records: Sequence[LogRecord], genesis: bytes, device_id: str,
                checkpoint: Checkpoint | None = None) -> Verification:
-    """Check canonical records and an optionally trusted anchored prefix.
+    """Periksa catatan baku dan bagian awal dengan anchor tepercaya jika tersedia.
 
-    Caller must obtain genesis/checkpoint independently from untrusted storage.
-    An unanchored self-consistent chain cannot prove absence of tail deletion.
+    Pemanggil memperoleh genesis/checkpoint secara independen dari penyimpanan tidak tepercaya.
+    Rantai konsisten tanpa anchor tidak membuktikan bahwa bagian akhirnya belum dihapus.
     """
     if not isinstance(genesis, bytes) or len(genesis) != 32:
         return Verification(False, 'INVALID_GENESIS')
@@ -133,12 +133,12 @@ def verify_log(records: Sequence[LogRecord], genesis: bytes, device_id: str,
 
 
 class SafeTraceModel:
-    """Within-epoch functional model; public attributes are not a security boundary."""
+    """Model fungsional dalam satu periode; atribut publik bukan batas keamanan."""
 
     def __init__(self, config: Configuration, device_id: str = 'demo-device') -> None:
         encoded_id = device_id.encode('utf-8')
         if not encoded_id or len(encoded_id) > 65535:
-            raise ValueError('device_id must encode to 1..65535 bytes')
+            raise ValueError('device_id harus memiliki pengodean 1..65535 byte')
         self.config = config
         self.device_id = device_id
         self.reset()
@@ -157,11 +157,11 @@ class SafeTraceModel:
 
     def boot(self, image: bytes, version: int) -> Decision:
         if self.boot_complete:
-            raise RuntimeError('boot once per reset epoch')
+            raise RuntimeError('boot hanya satu kali per periode reset')
         self.actuator_enable = False
         _uint(version, 16, 'version')
         if not isinstance(image, bytes):
-            raise ValueError('image must be bytes')
+            raise ValueError('image harus berupa bytes')
         digest = hashlib.sha256(image).digest()
         if not hmac.compare_digest(digest, self.config.trusted_digest):
             reason = Reason.DIGEST_MISMATCH
@@ -178,20 +178,20 @@ class SafeTraceModel:
         self.genesis = hashlib.sha256(material).digest()
         self.chain_head = self.genesis
         self.boot_complete = True
-        return Decision(self.system_trusted, reason)  # Boot success is not actuation.
+        return Decision(self.system_trusted, reason)  # Boot berhasil belum mengaktifkan aktuator.
 
     def process(self, command: Command, tag: bytes, temperature: int,
                 timestamp: int = 0) -> Decision:
-        self.actuator_enable = False  # Fail closed, including malformed API input.
+        self.actuator_enable = False  # Keluaran aman saat gagal, termasuk masukan API tidak sah.
         _uint(temperature, 16, 'temperature')
         _uint(timestamp, 32, 'timestamp')
         if not isinstance(tag, bytes):
-            raise ValueError('tag must be bytes')
+            raise ValueError('tag harus berupa bytes')
         if not self.boot_complete:
             return Decision(False, Reason.UNTRUSTED)
         if self.event_counter == MAX_COUNTER:
             self.system_trusted = False
-            raise OverflowError('event counter exhausted; no unlogged actuation')
+            raise OverflowError('penghitung peristiwa habis; aktuasi tanpa catatan ditolak')
         if not self.system_trusted:
             reason = Reason.UNTRUSTED
         elif not hmac.compare_digest(sign_command(self.config.key, command), tag):
@@ -199,7 +199,7 @@ class SafeTraceModel:
         elif command.sequence <= self.last_sequence:
             reason = Reason.REPLAY
         else:
-            # Software convention: consume fresh authenticated sequences on policy denial.
+            # Asumsi model: nomor autentik baru tetap dipakai saat kebijakan menolak.
             self.last_sequence = command.sequence
             reason = (Reason.OK if command.command_id == 1
                       and command.value <= self.config.max_speed
@@ -218,7 +218,7 @@ class SafeTraceModel:
 
     def checkpoint(self) -> Checkpoint:
         if not self.boot_complete:
-            raise RuntimeError('no boot-bound audit epoch yet')
+            raise RuntimeError('periode audit terkait boot belum tersedia')
         return Checkpoint(self.device_id, self.event_counter, self.chain_head)
 
     def verify_stored_log(self, records: Sequence[LogRecord]) -> Verification:

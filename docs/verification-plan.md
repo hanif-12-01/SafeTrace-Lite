@@ -1,172 +1,172 @@
-# Verification Plan
+# Rencana Verifikasi
 
-Status: **planned hardware verification**. Primary source: proposal section **3.2 Rencana Pengujian**, pp. 7-9. The Python reference exercises functional expectations; it does not implement RTL, timing, buses, or physical outputs. Proposed signal names describe future observations, not signals already present in a bitstream.
+Status: **verifikasi perangkat keras masih direncanakan**. Sumber utama: bagian **3.2 Rencana Pengujian**, halaman 7-9 proposal. Referensi Python memeriksa harapan fungsional; RTL, timing, bus, dan keluaran fisik belum diimplementasikan. Nama sinyal berikut merupakan rencana observasi, bukan sinyal pada bitstream yang sudah tersedia.
 
-## T1-T12 acceptance scenarios
+## Skenario Penerimaan T1-T12
 
-Unless stated otherwise, configure trusted image digest, a prototype key, minimum version, speed limit 80%, and a safe sensor threshold before locking configuration. Runtime tests start with a successful boot. Model fixtures use temperature threshold 70 as a software example. Check decisions, state changes and event records together, not just a return value.
+Kecuali dinyatakan lain, konfigurasikan digest image tepercaya, kunci prototipe, versi minimum, batas kecepatan 80%, dan ambang sensor aman sebelum lock. Uji runtime dimulai setelah boot valid. Data uji model memakai ambang suhu 70 sebagai contoh perangkat lunak. Periksa keputusan, perubahan state, dan peristiwa bersama-sama.
 
-### T1 — Valid startup image
+### T1 — Image Awal Valid
 
-| Field | Plan |
+| Aspek | Rencana |
 | --- | --- |
-| Objective | Establish runtime trust only for an accepted image/version. |
-| Preconditions | Reset gives BLOCK; trusted reference and minimum version configured/locked. |
-| Input stimulus | Stream complete image with matching digest and version >=minimum. |
-| Expected behavior | Digest/version checks pass; runtime gate becomes eligible, but boot alone does not authorize a command. |
-| Expected output signals | `SYSTEM_TRUSTED=1`, boot complete; `ACTUATOR_ENABLE=0` until a valid runtime decision. |
-| Pass/fail criteria | Trust asserted only after complete successful verification; no actuator enable during hashing. |
-| Planned verification method | Python digest/version check; cocotb full image streaming against reference; waveform checks for enable timing. |
+| Tujuan | Menetapkan kepercayaan operasi hanya untuk image/versi yang diterima. |
+| Prasyarat | Reset menghasilkan BLOCK; acuan digest dan versi minimum telah dikonfigurasi/dikunci. |
+| Stimulus masukan | Image lengkap dengan digest sesuai dan versi >=minimum. |
+| Perilaku yang diharapkan | Digest/versi lolos; gerbang dapat memasuki runtime, tetapi boot saja belum mengotorisasi perintah. |
+| Sinyal keluaran yang diharapkan | `SYSTEM_TRUSTED=1`, boot selesai; `ACTUATOR_ENABLE=0` hingga keputusan runtime valid. |
+| Kriteria lulus/gagal | Kepercayaan aktif hanya setelah verifikasi lengkap berhasil; aktuator tidak aktif selama hashing. |
+| Metode verifikasi yang direncanakan | Pemeriksaan digest/versi Python; streaming lengkap cocotb terhadap acuan; waveform untuk waktu enable. |
 
-### T2 — Modified firmware image
+### T2 — Image Firmware Dimodifikasi
 
-| Field | Plan |
+| Aspek | Rencana |
 | --- | --- |
-| Objective | Reject modified image bytes. |
-| Preconditions | Digest provisioned for original image; output initially BLOCK. |
-| Input stimulus | Flip one bit in the streamed image; keep admissible version. |
-| Expected behavior | Digest mismatch prevents runtime trust; attempted commands stay BLOCK. |
-| Expected output signals | `SYSTEM_TRUSTED=0`, digest mismatch status, `ACTUATOR_ENABLE=0`, BLOCK. |
-| Pass/fail criteria | Any mismatched complete image remains untrusted; failed boot cannot reuse previous valid state. |
-| Planned verification method | Python bit-flip case; RTL stream test with independent digest and output assertions; board LED/status demo. |
+| Tujuan | Menolak perubahan byte image. |
+| Prasyarat | Digest berasal dari image asli; keluaran awal BLOCK. |
+| Stimulus masukan | Ubah satu bit image; versi tetap memenuhi minimum. |
+| Perilaku yang diharapkan | Digest tidak sesuai; trust tidak aktif dan percobaan perintah tetap BLOCK. |
+| Sinyal keluaran yang diharapkan | `SYSTEM_TRUSTED=0`, status digest mismatch, `ACTUATOR_ENABLE=0`, BLOCK. |
+| Kriteria lulus/gagal | Image lengkap dengan digest berbeda tetap tidak tepercaya; boot gagal tidak memakai state valid sebelumnya. |
+| Metode verifikasi yang direncanakan | Uji perubahan bit Python; streaming RTL dengan digest independen dan assertion keluaran; demo LED/status board. |
 
-### T3 — Firmware rollback
+### T3 — Rollback Firmware
 
-| Field | Plan |
+| Aspek | Rencana |
 | --- | --- |
-| Objective | Enforce the configured minimum version. |
-| Preconditions | Matching trusted image digest, protected minimum version. |
-| Input stimulus | Matching digest but supplied version <minimum. |
-| Expected behavior | Version gate rejects image despite digest success. |
-| Expected output signals | `ROLLBACK=1`, `SYSTEM_TRUSTED=0`, BLOCK, `ACTUATOR_ENABLE=0`. |
-| Pass/fail criteria | Lower version always denied; version equality accepted in T1 variant. This tests comparison, not authenticated version metadata. |
-| Planned verification method | Python version cases; RTL version-comparator boundaries and locked-register checks; future signed-manifest binding separately. |
+| Tujuan | Menegakkan versi minimum yang dikonfigurasi. |
+| Prasyarat | Digest image sesuai; versi minimum terlindungi. |
+| Stimulus masukan | Digest valid, tetapi versi masukan <minimum. |
+| Perilaku yang diharapkan | Gerbang versi menolak meskipun digest lolos. |
+| Sinyal keluaran yang diharapkan | `ROLLBACK=1`, `SYSTEM_TRUSTED=0`, BLOCK, `ACTUATOR_ENABLE=0`. |
+| Kriteria lulus/gagal | Versi lebih rendah selalu ditolak; nilai sama diterima dalam variasi T1. Pengujian ini memeriksa perbandingan, bukan autentikasi metadata versi. |
+| Metode verifikasi yang direncanakan | Kasus versi Python; batas komparator RTL dan register terkunci; pengikatan manifest bertanda tangan diuji pada pengembangan lanjutan. |
 
-### T4 — Valid authenticated command
+### T4 — Perintah Autentik Valid
 
-| Field | Plan |
+| Aspek | Rencana |
 | --- | --- |
-| Objective | Permit an authenticated, fresh, safe action and record evidence. |
-| Preconditions | Trusted boot, last sequence lower than input, safe temperature. |
-| Input stimulus | Valid HMAC over complete command payload; fresh sequence; speed=60 with max=80. |
-| Expected behavior | HMAC, freshness and policy pass; sequence advances; ALLOW event committed to TrustLog. |
-| Expected output signals | `HMAC_VALID=1`, `FRESH_SEQUENCE=1`, `POLICY_VALID=1`, ALLOW, `ACTUATOR_ENABLE=1`; event-valid, increased counter/new chain head after log completion. |
-| Pass/fail criteria | Correct command reaches gated output, exactly one committed decision event, independently recomputed hash matches. |
-| Planned verification method | Python decision/chain checks; cocotb end-to-end transaction; SignalTap and LED/PWM/low-voltage-driver observation. |
+| Tujuan | Mengizinkan tindakan autentik, baru, dan aman serta mencatat buktinya. |
+| Prasyarat | Boot tepercaya, nomor terakhir lebih rendah, suhu aman. |
+| Stimulus masukan | HMAC valid atas seluruh payload, nomor baru, kecepatan=60 dengan maksimum=80. |
+| Perilaku yang diharapkan | HMAC, kebaruan nomor, dan kebijakan lolos; nomor diperbarui; peristiwa ALLOW tercatat. |
+| Sinyal keluaran yang diharapkan | `HMAC_VALID=1`, `FRESH_SEQUENCE=1`, `POLICY_VALID=1`, ALLOW, `ACTUATOR_ENABLE=1`; event-valid, penghitung meningkat, dan hash baru setelah log selesai. |
+| Kriteria lulus/gagal | Nilai perintah benar diteruskan, tepat satu peristiwa dicatat, hash cocok dengan perhitungan independen. |
+| Metode verifikasi yang direncanakan | Pemeriksaan keputusan/rantai Python; transaksi menyeluruh cocotb; SignalTap dan observasi LED/PWM/driver tegangan rendah. |
 
-### T5 — Forged command
+### T5 — Perintah Palsu
 
-| Field | Plan |
+| Aspek | Rencana |
 | --- | --- |
-| Objective | Reject an incorrect HMAC without poisoning replay state. |
-| Preconditions | Trusted boot and known last sequence. |
-| Input stimulus | Incorrect tag, or alter authenticated command ID/value/sequence after signing. |
-| Expected behavior | BLOCK with AUTH_FAIL; event recorded; last sequence unchanged. |
-| Expected output signals | `HMAC_VALID=0`, BLOCK, `reason_code=AUTH_FAIL`, `ACTUATOR_ENABLE=0`; event/counter/head update. |
-| Pass/fail criteria | No output activation, no unauthorized sequence update; payload/tag modifications detected. |
-| Planned verification method | Python bad-tag/all-field tests; cocotb independent HMAC vectors and malformed-length cases; board attack preset. |
+| Tujuan | Menolak HMAC salah tanpa meracuni state replay. |
+| Prasyarat | Boot tepercaya dan nomor terakhir diketahui. |
+| Stimulus masukan | Tag salah atau ID/nilai/nomor urut diubah setelah penandatanganan HMAC. |
+| Perilaku yang diharapkan | BLOCK dengan AUTH_FAIL; peristiwa dicatat; nomor terakhir tidak berubah. |
+| Sinyal keluaran yang diharapkan | `HMAC_VALID=0`, BLOCK, `reason_code=AUTH_FAIL`, `ACTUATOR_ENABLE=0`; pembaruan peristiwa/penghitung/hash. |
+| Kriteria lulus/gagal | Tidak ada aktuasi atau pembaruan nomor tanpa autentikasi; perubahan payload/tag terdeteksi. |
+| Metode verifikasi yang direncanakan | Uji tag salah/semua field Python; vektor HMAC independen dan panjang tidak sah pada cocotb; skenario serangan board. |
 
-### T6 — Replay attack
+### T6 — Serangan Replay
 
-| Field | Plan |
+| Aspek | Rencana |
 | --- | --- |
-| Objective | Reject repeated or older authenticated sequences. |
-| Preconditions | An authenticated fresh command has established `last_sequence`. |
-| Input stimulus | Valid HMAC with sequence ==last or <last. |
-| Expected behavior | BLOCK with REPLAY; last sequence does not decrease; deny event recorded. |
-| Expected output signals | `HMAC_VALID=1`, `FRESH_SEQUENCE=0`, BLOCK, `reason_code=REPLAY`, `ACTUATOR_ENABLE=0`. |
-| Pass/fail criteria | Equal/older values denied; fresh value accepted if policy safe; unauthenticated high sequence cannot poison state. |
-| Planned verification method | Python equality/older tests; RTL update timing, max-value/no-wrap tests and sequence-state readout. Cross-reset freshness needs a separate session/persistence design. |
+| Tujuan | Menolak nomor autentik yang sama atau lebih lama. |
+| Prasyarat | Perintah autentik baru telah menetapkan `last_sequence`. |
+| Stimulus masukan | HMAC valid dengan nomor ==terakhir atau <terakhir. |
+| Perilaku yang diharapkan | BLOCK dengan REPLAY; nomor tidak mundur; penolakan dicatat. |
+| Sinyal keluaran yang diharapkan | `HMAC_VALID=1`, `FRESH_SEQUENCE=0`, BLOCK, `reason_code=REPLAY`, `ACTUATOR_ENABLE=0`. |
+| Kriteria lulus/gagal | Nomor sama/lama ditolak; nomor baru diterima jika aman; nomor tinggi tanpa autentikasi tidak meracuni state. |
+| Metode verifikasi yang direncanakan | Uji nomor sama/lama Python; timing pembaruan, batas maksimum/tanpa wrap, dan pembacaan state RTL. Kebaruan lintas reset memerlukan desain sesi/persistensi terpisah. |
 
-### T7 — Safety boundary pass
+### T7 — Tepat pada Batas Aman
 
-| Field | Plan |
+| Aspek | Rencana |
 | --- | --- |
-| Objective | Confirm inclusive safety limit. |
-| Preconditions | Trusted boot, valid HMAC/fresh sequence, safe sensor context, max speed=80. |
-| Input stimulus | speed=80. Include sensor temperature exactly equal to its threshold as a variant. |
-| Expected behavior | Boundary equality passes; ALLOW event recorded. |
-| Expected output signals | `POLICY_VALID=1`, ALLOW, `ACTUATOR_ENABLE=1`. |
-| Pass/fail criteria | Exact configured limit is allowed and output value remains the authenticated requested value. |
-| Planned verification method | Python boundary equality; cocotb comparators and output value; SignalTap policy result. |
+| Tujuan | Memastikan batas keselamatan bersifat inklusif. |
+| Prasyarat | Boot tepercaya, HMAC valid/nomor baru, sensor aman, batas kecepatan=80. |
+| Stimulus masukan | Kecepatan=80; variasi suhu tepat sama dengan ambang. |
+| Perilaku yang diharapkan | Nilai sama dengan batas lolos; peristiwa ALLOW dicatat. |
+| Sinyal keluaran yang diharapkan | `POLICY_VALID=1`, ALLOW, `ACTUATOR_ENABLE=1`. |
+| Kriteria lulus/gagal | Nilai tepat batas diizinkan dan keluaran tetap sesuai nilai perintah yang diautentikasi. |
+| Metode verifikasi yang direncanakan | Uji kesamaan batas Python; komparator/nilai keluaran cocotb; observasi hasil kebijakan SignalTap. |
 
-### T8 — Safety boundary fail
+### T8 — Melebihi Batas Aman
 
-| Field | Plan |
+| Aspek | Rencana |
 | --- | --- |
-| Objective | Reject a value immediately above the limit even when authentic. |
-| Preconditions | Trusted boot, valid HMAC/fresh sequence, safe sensor, max speed=80. |
-| Input stimulus | speed=81; board demo may also use speed=100. |
-| Expected behavior | BLOCK with POLICY; event recorded. Sequence update follows finalized commit semantics (model consumes fresh authenticated sequence). |
-| Expected output signals | `HMAC_VALID=1`, `FRESH_SEQUENCE=1`, `POLICY_VALID=0`, BLOCK, `reason_code=POLICY`, `ACTUATOR_ENABLE=0`. |
-| Pass/fail criteria | No actuation for 81 or higher; correct denial reason and audit entry. |
-| Planned verification method | Python one-over case; RTL comparator boundaries, event checking and output assertions; board unsafe-command demo. |
+| Tujuan | Menolak nilai tepat di atas batas walaupun autentik. |
+| Prasyarat | Boot tepercaya, HMAC valid/nomor baru, sensor aman, batas=80. |
+| Stimulus masukan | Kecepatan=81; demo board dapat memakai 100. |
+| Perilaku yang diharapkan | BLOCK dengan POLICY; dicatat. Pembaruan nomor mengikuti aturan final; model memakai nomor autentik baru meskipun kebijakan menolak. |
+| Sinyal keluaran yang diharapkan | `HMAC_VALID=1`, `FRESH_SEQUENCE=1`, `POLICY_VALID=0`, BLOCK, `reason_code=POLICY`, `ACTUATOR_ENABLE=0`. |
+| Kriteria lulus/gagal | Tidak ada aktuasi untuk nilai 81 atau lebih; alasan penolakan dan catatan audit benar. |
+| Metode verifikasi yang direncanakan | Uji satu satuan di atas batas Python; komparator, peristiwa, dan assertion keluaran RTL; demo perintah tidak aman. |
 
-### T9 — Unsafe sensor context
+### T9 — Kondisi Sensor Tidak Aman
 
-| Field | Plan |
+| Aspek | Rencana |
 | --- | --- |
-| Objective | Deny otherwise safe authentic command under unsafe physical context. |
-| Preconditions | Trusted boot, valid tag/fresh sequence, value within limit. |
-| Input stimulus | Trusted proxy temperature >configured threshold. |
-| Expected behavior | BLOCK with POLICY based on sensor snapshot; record that snapshot. |
-| Expected output signals | `POLICY_VALID=0`, BLOCK, `reason_code=POLICY`, `ACTUATOR_ENABLE=0`. |
-| Pass/fail criteria | Unsafe context denies command; event sensor field equals the sample used for decision. |
-| Planned verification method | Python threshold fixture; cocotb sensor equality/one-over and snapshot consistency; board switch/ADC/GPIO proxy. Spoofing before interface remains excluded. |
+| Tujuan | Menolak perintah autentik yang nilainya aman saat kondisi fisik tidak aman. |
+| Prasyarat | Boot tepercaya, tag valid/nomor baru, nilai dalam batas. |
+| Stimulus masukan | Suhu proksi tepercaya >ambang yang dikonfigurasi. |
+| Perilaku yang diharapkan | BLOCK dengan POLICY berdasarkan snapshot sensor; snapshot tersebut dicatat. |
+| Sinyal keluaran yang diharapkan | `POLICY_VALID=0`, BLOCK, `reason_code=POLICY`, `ACTUATOR_ENABLE=0`. |
+| Kriteria lulus/gagal | Konteks tidak aman menolak perintah; field sensor peristiwa sesuai sampel yang dipakai untuk keputusan. |
+| Metode verifikasi yang direncanakan | Ambang Python; kesamaan/melebihi batas dan konsistensi snapshot cocotb; proksi sakelar/ADC/GPIO board. Pemalsuan sebelum antarmuka tetap di luar cakupan. |
 
-### T10 — Log modification
+### T10 — Perubahan Log
 
-| Field | Plan |
+| Aspek | Rencana |
 | --- | --- |
-| Objective | Detect changed stored evidence during verification. |
-| Preconditions | Generated events/hashes and independently retained genesis/checkpoint. |
-| Input stimulus | Flip a stored event bit (including decision field); also try recomputing stored hashes while keeping trusted checkpoint unchanged. |
-| Expected behavior | Recomputed digest or anchored head mismatch; verification rejects history. |
-| Expected output signals | Verify failure / `tamper_flag=1`; no actuation is implied by audit verification. |
-| Pass/fail criteria | Changed record rejected against trusted material; clean chain passes. Tamper flag behavior/reset must match finalized controller specification. |
-| Planned verification method | Python log-copy bit flip and recomputed-chain case; RTL verify-mode tests; board log-copy demo. |
+| Tujuan | Mendeteksi bukti tersimpan yang berubah saat diverifikasi. |
+| Prasyarat | Peristiwa/hash tersedia; genesis/checkpoint disimpan secara independen. |
+| Stimulus masukan | Ubah satu bit peristiwa, termasuk keputusan; coba hitung ulang hash tersimpan dengan checkpoint tepercaya tetap. |
+| Perilaku yang diharapkan | Digest atau hash terjangkar tidak cocok; riwayat ditolak. |
+| Sinyal keluaran yang diharapkan | Verifikasi gagal / `tamper_flag=1`; verifikasi audit tidak berarti aktuasi. |
+| Kriteria lulus/gagal | Catatan berubah ditolak terhadap acuan tepercaya; rantai bersih diterima. Perilaku/reset tamper flag harus sesuai spesifikasi pengendali final. |
+| Metode verifikasi yang direncanakan | Perubahan salinan log dan rantai yang dihitung ulang di Python; mode verify RTL; demo salinan log board. |
 
-### T11 — Log tail truncation
+### T11 — Pemotongan Bagian Akhir Log
 
-| Field | Plan |
+| Aspek | Rencana |
 | --- | --- |
-| Objective | Detect history older than an independently retained checkpoint. |
-| Preconditions | Backend/test fixture retains `{device_id, counter=105, chain_head_at_105}`. |
-| Input stimulus | Present storage ending at counter=104, with otherwise internally valid prefix hashes. |
-| Expected behavior | Checkpoint count exceeds available history; truncation/checkpoint mismatch reported. |
-| Expected output signals | Backend verify/checkpoint mismatch or truncation alert. A hardware `tamper_flag` requires explicit backend-to-FPGA reporting and is not assumed. |
-| Pass/fail criteria | Anchored truncation rejected; intact 105-record chain and valid extensions pass. Do not claim detection of every unanchored tail deletion. |
-| Planned verification method | Python 105→104 example, forged head/wrong-device/extension variants; planned HPS/backend integration and coherent checkpoint export test. |
+| Tujuan | Mendeteksi riwayat yang lebih lama daripada checkpoint independen. |
+| Prasyarat | Backend/data uji mempertahankan `{device_id, counter=105, chain_head_at_105}`. |
+| Stimulus masukan | Log berakhir pada 104, dengan hash bagian awal tetap konsisten. |
+| Perilaku yang diharapkan | Penghitung checkpoint melebihi riwayat tersedia; pemotongan/ketidaksesuaian dilaporkan. |
+| Sinyal keluaran yang diharapkan | Ketidaksesuaian verifikasi/checkpoint atau peringatan pemotongan backend. `tamper_flag` FPGA memerlukan jalur pelaporan backend-ke-FPGA yang eksplisit dan tidak diasumsikan tersedia. |
+| Kriteria lulus/gagal | Pemotongan terjangkar ditolak; 105 catatan utuh dan kelanjutannya yang sah diterima. Tidak mengklaim deteksi semua penghapusan bagian akhir tanpa anchor. |
+| Metode verifikasi yang direncanakan | Contoh 105→104, hash palsu/ID salah/kelanjutan Python; integrasi HPS/backend dan uji snapshot checkpoint konsisten. |
 
-### T12 — Reset behavior
+### T12 — Perilaku Reset
 
-| Field | Plan |
+| Aspek | Rencana |
 | --- | --- |
-| Objective | Restore safe default state and prevent stale ALLOW across reset. |
-| Preconditions | Exercise idle, trusted runtime, active SHA/HMAC, pending output and pending log commit. |
-| Input stimulus | Assert reset at each RTL transaction phase, including immediately before decision-valid. |
-| Expected behavior | Output becomes BLOCK; trust/valid flags and scheduler ownership clear; incomplete operations cannot resurrect an old decision. Reset persistence/lock/session handling must be specified separately. |
-| Expected output signals | `ACTUATOR_ENABLE=0`, `SYSTEM_TRUSTED=0`, no stale ALLOW/digest/event valid; safe reset status. |
-| Pass/fail criteria | No active output during/after reset until new boot and authenticated safe command; defined behavior for partial event updates. |
-| Planned verification method | Python reset between atomic calls checks safe state only. Mid-transaction reset, asynchronous reset timing and bus/clock-domain effects require cocotb/RTL and SignalTap; they remain untested. |
+| Tujuan | Mengembalikan kondisi aman dan mencegah ALLOW lama setelah reset. |
+| Prasyarat | Uji idle, runtime tepercaya, SHA/HMAC aktif, keluaran tertunda, dan log yang belum selesai. |
+| Stimulus masukan | Reset pada setiap tahap transaksi RTL, termasuk tepat sebelum decision-valid. |
+| Perilaku yang diharapkan | Keluaran BLOCK; trust/validitas dan kepemilikan SHA dibersihkan; operasi tidak lengkap tidak menghidupkan keputusan lama. Persistensi/lock/sesi reset harus ditetapkan terpisah. |
+| Sinyal keluaran yang diharapkan | `ACTUATOR_ENABLE=0`, `SYSTEM_TRUSTED=0`, tidak ada ALLOW/digest/event-valid lama, status reset aman. |
+| Kriteria lulus/gagal | Keluaran tidak aktif selama/setelah reset sampai boot dan perintah autentik aman baru; pembaruan peristiwa parsial memiliki perilaku yang ditetapkan. |
+| Metode verifikasi yang direncanakan | Python hanya memeriksa reset di antara pemanggilan atomik. Reset tengah transaksi, timing asinkron, serta efek bus/domain clock memerlukan cocotb/RTL dan SignalTap; belum diuji. |
 
-## Tools and verification stages
+## Perangkat dan Tahap Verifikasi
 
-| Stage / tools | Required evidence before claiming completion |
+| Tahap dan perangkat | Bukti yang diperlukan sebelum dinyatakan selesai |
 | --- | --- |
-| Python standard-library reference | Real unittest output for decisions, serialization and anchor verification; no timing/resource inference. |
-| Verilator / ModelSim | Compile actual RTL; unit and integration simulations with meaningful waveform/assertion evidence. |
-| cocotb + Python | Drive actual module ports, compare digest/tag/decision/event bytes with independent reference, verify handshakes and reset phases. |
-| Intel Quartus Prime + Platform Designer | Build for Cyclone V SE 5CSEBA6U23I7; synthesis/fitter utilization, register map, timing constraints, 50 MHz timing report and Power Analyzer if power is reported. |
-| SignalTap Logic Analyzer | Capture FSMs, SHA request/valid/owner, sequence checks, policy result, output gate, event counter, chain head/tamper status on the board. |
-| Physical demo | Valid/modified/rollback startup; safe/unsafe/replayed command; modified log and anchored truncation; LED/PWM or low-voltage motor via driver. |
+| Referensi pustaka standar Python | Keluaran unittest nyata untuk keputusan, serialisasi, dan verifikasi anchor; tanpa inferensi timing/sumber daya. |
+| Verilator / ModelSim | Kompilasi RTL nyata, simulasi unit/integrasi, serta waveform/assertion yang bermakna. |
+| cocotb + Python | Mengendalikan port nyata, membandingkan digest/tag/keputusan/byte peristiwa dengan acuan independen, handshake dan tahap reset. |
+| Intel Quartus Prime + Platform Designer | Build 5CSEBA6U23I7, laporan sintesis/fitter, peta register, batas timing, laporan 50 MHz, dan Power Analyzer jika daya dilaporkan. |
+| SignalTap Logic Analyzer | FSM, permintaan/validitas/pemilik SHA, nomor urut, kebijakan, gerbang keluaran, penghitung, hash/tamper pada board. |
+| Demonstrasi fisik | Startup valid/modifikasi/rollback; perintah aman/tidak aman/replay; log berubah/pemotongan terjangkar; LED/PWM atau motor tegangan rendah melalui driver. |
 
-Before end-to-end RTL tests, run SHA/HMAC known-answer vectors independent of the hardware implementation. Exercise SHA padding at 55/56/63/64-byte message sizes and multi-block image inputs. Test scheduler ownership under contention, configuration lock/read protection, malformed traffic, BRAM backpressure and counter overflow. Tests must enforce transaction identity so validity flags from separate commands cannot combine into ALLOW.
+Sebelum integrasi RTL, jalankan vektor SHA/HMAC dengan hasil acuan yang diketahui secara independen. Uji padding pesan 55/56/63/64 byte dan image multiblok. Periksa kepemilikan layanan SHA saat persaingan, perlindungan lock/pembacaan konfigurasi, masukan tidak sah, backpressure BRAM, dan batas penghitung. Identitas transaksi harus dijaga agar validitas dari perintah berbeda tidak digabung menjadi ALLOW.
 
-## Engineering targets and honest reporting
+## Target Rekayasa dan Pelaporan
 
-All numbers here are **engineering target — not measured result**: 50 MHz; <=4,000 ALM; <=5,000 FF; <=128 Kbit BRAM; 0 DSP; one SHA block <5 microseconds; short HMAC <25 microseconds; policy <=5 cycles after auth/sequence; log one block plus control. Shared scheduler wait and host transfers must be accounted for separately in measured end-to-end latency.
+Seluruh angka merupakan **target rekayasa — bukan hasil pengukuran**: 50 MHz; <=4.000 ALM; <=5.000 FF; <=128 Kbit BRAM; 0 DSP; satu blok SHA <5 mikrodetik; HMAC pendek <25 mikrodetik; kebijakan <=5 siklus setelah autentikasi/nomor urut; log satu blok ditambah kendali. Waktu tunggu penjadwal dan transfer host harus diperhitungkan terpisah pada latensi menyeluruh.
 
-Success targets are: every defined SHA/HMAC known-answer vector passes; T2/T3/T5/T6/T8/T9 produce BLOCK; T10/T11 produce correct audit alerts; reset/untrusted/error states keep output inactive; event counters/heads are consistent. The proposed end-to-end demo lasts 3-5 minutes. None of these FPGA targets has been measured in this repository.
+Target keberhasilan: seluruh vektor SHA/HMAC yang ditetapkan lulus; T2/T3/T5/T6/T8/T9 menghasilkan BLOCK; T10/T11 menghasilkan peringatan audit yang benar; reset/tidak tepercaya/error menjaga keluaran tidak aktif; penghitung/hash konsisten. Demo menyeluruh direncanakan 3-5 menit. Target FPGA tersebut belum diukur dalam repositori ini.
 
-Future reports must record commit, tool versions, exact device/clock constraints, vector set, passing/failing scenarios, observed cycles, utilization and limitations. Do not fabricate waveforms, board photographs, benchmarks, or synthesis results. [Software coverage](../tests/README.md) records what can be checked now.
+Laporan berikutnya harus menyebut commit, versi perangkat, device/batas clock, kumpulan vektor, skenario lulus/gagal, siklus teramati, penggunaan sumber daya, dan batasan. Waveform, foto board, benchmark, dan laporan sintesis harus berasal dari pelaksanaan nyata. [Cakupan perangkat lunak](../tests/README.md) menjelaskan bagian yang dapat diperiksa saat ini.

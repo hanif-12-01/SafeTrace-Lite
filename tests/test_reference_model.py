@@ -1,4 +1,4 @@
-"""Functional tests; reset during RTL transactions remains future work."""
+"""Uji fungsional; reset di tengah transaksi RTL masih merupakan rencana lanjutan."""
 
 from dataclasses import replace
 import hashlib
@@ -15,7 +15,7 @@ from simulation.reference_model import (
 class FunctionalTests(unittest.TestCase):
     def setUp(self):
         self.image = b'SafeTrace Lite public test image v2'
-        self.key = bytes(range(32))  # Intentionally public software fixture.
+        self.key = bytes(range(32))  # Data uji perangkat lunak yang memang bersifat publik.
         self.model = SafeTraceModel(Configuration(hashlib.sha256(self.image).digest(), self.key, 2))
 
     def boot(self):
@@ -197,7 +197,7 @@ class FunctionalTests(unittest.TestCase):
     def test_counter_exhaustion_prevents_unlogged_output(self):
         self.boot()
         self.send()
-        self.model.event_counter = MAX_COUNTER  # Inject boundary state, not billions of events.
+        self.model.event_counter = MAX_COUNTER  # Injeksi state batas untuk menguji kondisi maksimum.
         with self.assertRaises(OverflowError):
             self.send(sequence=2)
         self.assertFalse(self.model.actuator_enable)

@@ -1,39 +1,39 @@
-# Software Functional Reference Model
+# Model Referensi Fungsional Perangkat Lunak
 
-This directory contains an executable **software functional reference model**, using Python 3.10+ `hashlib`, `hmac`, `struct` and dataclasses. It is an executable specification for selected proposal behavior; it is not an FPGA emulator or RTL verification result.
+Direktori ini berisi **model referensi fungsional perangkat lunak** yang dapat dijalankan dengan Python 3.10+, menggunakan `hashlib`, `hmac`, `struct`, dan dataclasses. Model menjadi spesifikasi perilaku untuk sebagian fungsi proposal. Model ini bukan emulator FPGA atau hasil verifikasi RTL.
 
-From the repository root:
+Jalankan dari direktori utama repositori:
 
 ```sh
 python -m unittest discover -s tests -v
 python -m simulation.demo
 ```
 
-The demo prints valid boot, safe command ALLOW, unsafe/replayed command BLOCK, a clean anchored log, and a modified log rejected. It uses an explicitly public fixture key constructed in memory; no real device credential is included.
+Demo menampilkan boot valid, perintah aman ALLOW, perintah tidak aman/replay BLOCK, log bersih yang sesuai checkpoint, dan penolakan log yang diubah. Kunci contoh dibuat di memori dan memang bersifat publik untuk pengujian; tidak ada credential perangkat nyata.
 
-## Implemented functional steps and integration roadmap
+## Fungsi yang Tersedia dan Peta Jalan Integrasi
 
-| Step | Software status | Planned hardware integration |
+| Tahap | Status perangkat lunak | Rencana integrasi perangkat keras |
 | --- | --- | --- |
-| 1. Python functional reference | `reference_model.py` | Use as a cocotb oracle after canonical RTL formats are finalized. |
-| 2. Boot integrity | Digest and minimum-version comparison, default-deny trust | Stream/pad image, share SHA, enforce protected configuration. |
-| 3. HMAC authentication | Full SHA-256 tag over ID/value/sequence using `compare_digest` | Shared-core inner/outer hashing and complete tag comparison. |
-| 4. Replay detection | Strictly increasing u32 sequence within a reset epoch | Define persistent/session semantics and atomic state updates. |
-| 5. Safety policy | Speed command ID 1, inclusive speed/temperature limits | Comparator/FSM policy and coherent sensor sampling. |
-| 6. SHA-256 chain | 16-byte event, boot-bound genesis and event counter | Fixed event packing, SHA scheduler and M10K/BRAM. |
-| 7. Tamper detection | Stored-record/hash check plus independently retained checkpoint | FPGA verification path and HPS/backend checkpoint workflow. |
-| 8. Future RTL integration | Planned | Verilator/ModelSim, cocotb, Avalon-MM wrapper, Quartus and SignalTap. |
+| 1. Referensi fungsional Python | `reference_model.py` | Menjadi pembanding cocotb setelah format RTL ditetapkan. |
+| 2. Integritas boot | Perbandingan digest/versi minimum dan kepercayaan default-deny | Streaming/padding image, inti SHA bersama, konfigurasi terlindungi. |
+| 3. Autentikasi HMAC | Tag SHA-256 lengkap atas ID/nilai/nomor urut dengan `compare_digest` | Hash bagian dalam/luar dan perbandingan seluruh tag pada inti bersama. |
+| 4. Deteksi replay | Nomor u32 meningkat ketat dalam satu periode reset | Tetapkan sesi/persistensi dan pembaruan state atomik. |
+| 5. Kebijakan keselamatan | ID 1 untuk kecepatan; batas kecepatan/suhu inklusif | Komparator/FSM dan pengambilan sensor yang konsisten. |
+| 6. Rantai SHA-256 | Peristiwa 16 byte, genesis terkait boot, dan penghitung | Format tetap, penjadwal SHA, dan M10K/BRAM. |
+| 7. Deteksi perubahan | Pemeriksaan peristiwa/hash dan checkpoint independen | Jalur verifikasi FPGA dan alur checkpoint HPS/backend. |
+| 8. Integrasi RTL | Direncanakan | Verilator/ModelSim, cocotb, wrapper Avalon-MM, Quartus, dan SignalTap. |
 
-## Model contract
+## Kontrak Model
 
-`SafeTraceModel` receives an immutable configuration: trusted 32-byte image digest, 32-byte demo key, minimum version and policy limits. `boot(image, version)` may run once per reset epoch. It never enables actuation by itself. `process(command, tag, temperature, timestamp)` evaluates a single atomic transaction, returns a `Decision`, and appends a packed event after boot completion. Pre-boot commands are denied and cannot start a trusted audit epoch. Both ALLOW and BLOCK after completed boot are recorded.
+`SafeTraceModel` menerima konfigurasi tetap: digest image tepercaya 32 byte, kunci demo 32 byte, versi minimum, dan batas kebijakan. `boot(image, version)` dijalankan satu kali per periode reset dan tidak langsung mengaktifkan aktuator. `process(command, tag, temperature, timestamp)` mengevaluasi satu transaksi atomik, mengembalikan `Decision`, lalu menambahkan peristiwa setelah boot selesai. Perintah sebelum boot ditolak dan tidak membentuk periode audit tepercaya. ALLOW maupun BLOCK setelah boot selesai dicatat.
 
-Command payload bytes are `>BHI` (u8 ID, u16 value, u32 sequence). The tag authenticates **all** payload bytes. Sequence state starts at zero, so the first accepted sequence is at least one. A valid fresh sequence is consumed before policy evaluation, even for a policy-denied action. Failed authentication does not advance sequence. Unknown IDs are denied. Counter exhaustion disables output and raises an explicit error rather than silently wrapping or accepting an unlogged decision.
+Payload perintah menggunakan `>BHI`: ID u8, nilai u16, dan nomor urut u32. Tag mengautentikasi **seluruh** byte payload. Nomor urut awal adalah nol, sehingga nomor pertama yang diterima minimal satu. Nomor baru yang autentik dipakai sebelum evaluasi kebijakan, termasuk jika tindakan ditolak. Autentikasi gagal tidak memperbarui nomor; ID tidak dikenal ditolak. Penghitung yang habis menonaktifkan keluaran dan menghasilkan kesalahan eksplisit, tanpa berputar ke nol atau mengizinkan tindakan yang tidak tercatat.
 
-An event is `>IIBHHBH`: counter:u32, timestamp_low:u32, command_id:u8, value:u16, sensor/temperature:u16, decision+reason:u8, version:u16. Its 16 bytes follow the proposal's example layout. Reason values and big-endian encoding are software conventions. The model's genesis hashes a domain label, device ID, measured image digest, supplied version and boot outcome. The hardware genesis protocol is still pending.
+Format peristiwa adalah `>IIBHHBH`: penghitung:u32, timestamp_low:u32, command_id:u8, nilai:u16, sensor/suhu:u16, keputusan+alasan:u8, dan versi:u16. Ukuran 16 byte mengikuti contoh proposal. Enumerasi alasan dan big-endian merupakan asumsi model. Genesis model menghitung hash label domain, ID perangkat, digest image terukur, versi masukan, dan hasil boot. Protokol genesis perangkat keras belum final.
 
-`checkpoint()` returns device ID, event counter and current head. `verify_log(records, genesis, device_id, checkpoint)` recomputes each record, validates counter ordering, and compares the chain prefix at the retained checkpoint. A valid extension beyond that checkpoint is accepted. A shorter chain or wrong anchored head/device is rejected. `verify_stored_log` compares against the model's own retained head and latches `tamper_flag` on rejection. A caller must obtain genesis/checkpoint from a trusted source, not from the same potentially modified log file.
+`checkpoint()` menghasilkan ID perangkat, penghitung, dan hash terakhir. `verify_log(records, genesis, device_id, checkpoint)` menghitung ulang setiap catatan, memeriksa urutan penghitung, dan membandingkan bagian rantai pada checkpoint yang disimpan. Kelanjutan log yang sah diterima; log lebih pendek atau hash/ID terjangkar yang salah ditolak. `verify_stored_log` membandingkan dengan hash model sendiri dan mengunci `tamper_flag` saat penolakan. Genesis/checkpoint harus diperoleh dari sumber tepercaya yang independen dari file log yang mungkin telah diubah.
 
-`reset()` disables actuation and clears runtime trust, sequence, event counter and in-memory log, preserving immutable fixture configuration. It does not create persistent anti-replay state, simulate a hardware reset mid-cycle or erase secrets securely from Python memory. Save checkpoints independently before reset if testing historical logs. Repeat boots can reproduce genesis; cross-reset epoch freshness remains unresolved.
+`reset()` menonaktifkan aktuasi dan membersihkan kepercayaan runtime, nomor urut, penghitung, serta log di memori; konfigurasi tetap dipertahankan. Reset ini tidak menyediakan anti-replay persisten, reset perangkat keras di tengah siklus, atau penghapusan aman rahasia dari memori Python. Simpan checkpoint secara independen sebelum reset untuk memeriksa riwayat. Boot berulang dapat menghasilkan genesis identik; kebaruan sesi lintas reset belum ditetapkan.
 
-The model has an unbounded event list, supplied timestamp and atomic calls. It does not model SHA scheduling, BRAM overflow, PWM duration, actual actuator completion, configuration-register locks, asynchronous clocks, production provisioning or backend networking. See [source notes](../docs/source-notes.md) for open assumptions and [verification plan](../docs/verification-plan.md) for hardware work still required.
+Model memakai list tanpa batas kapasitas, timestamp masukan, dan pemanggilan atomik. Penjadwalan SHA, BRAM penuh, durasi PWM, penyelesaian fisik aktuator, penguncian register, clock asinkron, penyediaan kunci produksi, dan jaringan backend tidak dimodelkan. Lihat [catatan sumber](../docs/source-notes.md) dan [rencana verifikasi](../docs/verification-plan.md) untuk pekerjaan lanjutan.

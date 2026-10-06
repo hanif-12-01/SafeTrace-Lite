@@ -1,1 +1,1 @@
-"""SafeTrace Lite software functional reference; no hardware emulation."""
+"""Referensi fungsional perangkat lunak SafeTrace Lite; tanpa emulasi perangkat keras."""

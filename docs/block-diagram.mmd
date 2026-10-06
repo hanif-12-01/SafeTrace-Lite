@@ -1,0 +1,55 @@
+%% SafeTrace Lite - proposed architecture, not implemented hardware.
+%% Local fallback PNG: python tools/render_diagram.py (requires Pillow).
+flowchart TB
+    SENDER["Trusted Command Sender<br/>HMAC tag + sequence"]
+    HPS["DE10-Nano HPS ARM<br/>UI / image / command transport"]
+    SENSOR["Trusted Sensor Proxy<br/>Switches / ADC / GPIO"]
+    subgraph FPGA["FPGA Fabric - SafeTrace Lite"]
+        CONFIG["Trusted Configuration<br/>Digest / key / min version / policy<br/>Protected after lock"]
+        BOOT["Boot Integrity Gate<br/>Image SHA-256 + version check"]
+        subgraph RUNTIME["Runtime Command Guard"]
+            HMAC["HMAC Verification<br/>HMAC-SHA256"]
+            REPLAY["Replay Guard<br/>Increasing sequence"]
+            POLICY["Safety Policy Engine<br/>Value limit + sensor context"]
+        end
+        GATE["Output Gate<br/>ALLOW iff all checks pass<br/>BLOCK = inactive output"]
+        SCHED["SHA Scheduler<br/>Boot / HMAC / log arbitration"]
+        SHA["Shared SHA-256 Core<br/>One hardware engine"]
+        LOG["TrustLog<br/>Event counter + hash chain<br/>Recent-event BRAM buffer"]
+    end
+    ACTUATOR["Actuator Demo<br/>LED / PWM / low-voltage driver"]
+    STORE["Audit Storage / HPS<br/>Events + hashes / snapshot relay"]
+    BACKEND["Backend Checkpoint<br/>Device ID + counter + chain head"]
+
+    SENDER -->|authenticated frame| HPS
+    HPS -->|image + version / Avalon-MM| BOOT
+    HPS -->|command transport / Avalon-MM| HMAC
+    CONFIG -->|digest + minimum version| BOOT
+    CONFIG -->|protected key| HMAC
+    CONFIG -->|locked thresholds| POLICY
+    BOOT -->|SYSTEM_TRUSTED| GATE
+    HMAC -->|HMAC_VALID| REPLAY
+    REPLAY -->|FRESH_SEQUENCE| POLICY
+    SENSOR -->|trusted process state| POLICY
+    POLICY -->|POLICY_VALID + checked command| GATE
+    GATE -->|ALLOW: gated GPIO/PWM| ACTUATOR
+    GATE -->|every ALLOW/BLOCK + reason| LOG
+    LOG -->|events + hashes / FPGA snapshot| STORE
+    STORE -->|HPS forwards device / counter / head| BACKEND
+    BOOT <-.->|hash service| SCHED
+    HMAC <-.->|hash service| SCHED
+    LOG <-.->|hash service| SCHED
+    SCHED <-.->|512-bit block / 256-bit digest| SHA
+
+    classDef host fill:#eff5fc,stroke:#64748b,color:#152f4b
+    classDef boot fill:#e7f1ff,stroke:#2563eb,color:#152f4b
+    classDef action fill:#fff4de,stroke:#d49b24,color:#4d350e
+    classDef crypto fill:#f0eaff,stroke:#8262bd,color:#382554
+    classDef evidence fill:#e6f6f3,stroke:#1b927e,color:#164b43
+    classDef config fill:#f1f5f9,stroke:#64748b,color:#152f4b
+    class SENDER,HPS,SENSOR,ACTUATOR host
+    class BOOT boot
+    class HMAC,REPLAY,POLICY,GATE action
+    class SCHED,SHA crypto
+    class LOG,STORE,BACKEND evidence
+    class CONFIG config

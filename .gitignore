@@ -1,0 +1,37 @@
+# Local secrets and provisioning material
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+credentials.json
+
+# Python / editor caches
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.coverage
+htmlcov/
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
+
+# Simulation and FPGA build products
+obj_dir/
+work/
+*.vcd
+*.fst
+*.wlf
+db/
+incremental_db/
+output_files/
+*.sof
+*.rbf
+*.qws
+
+# Local source proposal and scratch files; documentation PNG is intentional
+*.pdf
+tmp/
+node_modules/
